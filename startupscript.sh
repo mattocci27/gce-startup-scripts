@@ -1,5 +1,7 @@
 #!/bin/sh
 
+USERNAME=mattocci
+
 INITIALIZED_FLAG=".startup_script_initialized"
 
 main()
@@ -39,6 +41,8 @@ setup(){
   sudo apt -y install tmux
   sudo apt -y install clang
   sudo apt -y install mosh
+  sudo apt -y install tree
+  sudo apt -y install ranger
 
   # Krypton CLI for key management
   curl https://krypt.co/kr | sh
@@ -61,6 +65,10 @@ setup(){
   sudo -i -u "${USERNAME}" git config --global user.email "mattocci27@gmail.com"
 
   git clone git://github.com/mattocci27/dotfiles.git ~/dotfiles
+  
+  cd dotfiles
+
+  sh ./setup_gch.sh
 
   ### Python packages
   sudo apt -y install python-pip python-virtualenv python-numpy python-matplotlib
