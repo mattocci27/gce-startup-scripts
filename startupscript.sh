@@ -68,7 +68,7 @@ setup(){
   
   cd dotfiles
 
-  sh ./setup_gch.sh
+  sh ./setup_gce.sh
 
   ### Python packages
   sudo apt -y install python-pip python-virtualenv python-numpy python-matplotlib
