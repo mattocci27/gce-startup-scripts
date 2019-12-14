@@ -64,10 +64,8 @@ setup(){
   sudo -i -u "${USERNAME}" git config --global user.name "Masatoshi Katabuchi"
   sudo -i -u "${USERNAME}" git config --global user.email "mattocci27@gmail.com"
 
-  git clone git://github.com/mattocci27/dotfiles.git ~/dotfiles
-  
-  cd dotfiles
-
+  git clone git://github.com/mattocci27/dotfiles.git ${HOME}/dotfiles
+  cd ${HOME}/dotfiles
   sh ./setup_gce.sh
 
   ### Python packages
