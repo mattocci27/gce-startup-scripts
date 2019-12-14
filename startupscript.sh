@@ -64,17 +64,17 @@ setup(){
   sudo -i -u "${USERNAME}" git config --global user.name "Masatoshi Katabuchi"
   sudo -i -u "${USERNAME}" git config --global user.email "mattocci27@gmail.com"
 
-  git clone git://github.com/mattocci27/dotfiles.git ${HOME}/dotfiles
-  cd ${HOME}/dotfiles
-  sh ./setup_gce.sh
-
   ### Python packages
   sudo apt -y install python-pip python-virtualenv python-numpy python-matplotlib
 
   ### pip packages
   #sudo pip install django flask django-widget-tweaks django-ckeditor beautifulsoup4 requests classifier SymPy ipython
-
   sudo apt -y install neovim
+
+  git clone git://github.com/mattocci27/dotfiles.git ${HOME}/dotfiles
+  cd ${HOME}/dotfiles
+  sh ./setup_gce.sh
+
 }
 
 # Update on each startup except the first time

@@ -28,6 +28,7 @@ SERVICE_ACCOUNT=$(\
 gcloud beta compute --project "${PROJECT_NAME}" \
   instances create "${INSTANCE_NAME}" \
   --zone "us-central1-a" \
+  #--machine-type "n1-standard-1" \
   --machine-type "g1-small" \
   #--subnet "default" \
   --maintenance-policy "MIGRATE" \

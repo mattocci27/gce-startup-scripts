@@ -2,14 +2,16 @@
 
 ## Before running create.sh
 
-- setup port
-- setup ssh keys
+- setup port (80 and HTTPS) on GCE console
+- setup ssh keys on GCE console
 
 ## Create instance
 
 - use google cloud shell
+- save create.sh in the cloud console
+- for example, `sh create.sh hello` creates a hello instance.
 
-- images
+![cloud_console](./imgs/startup.png)
 
 ## Startup script log
 
