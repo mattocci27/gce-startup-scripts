@@ -2,10 +2,14 @@
 
 ## Before running create.sh
 
-- setup port (80 and HTTPS) on GCE console
+- setup port 80 (HTTP) for Rstudio on GCE console
 - setup ssh keys on GCE console
 
-## Create instance
+## Usage
+
+```
+sh create.sh instance-name
+```
 
 - use google cloud shell
 - save create.sh in the cloud console
@@ -19,3 +23,7 @@
 - Debian: `/var/log/daemon.log`
 - Ubuntu: `/var/log/syslog`
 - SLES: `/var/log/messages`
+
+## Related
+
+- [Macに別れを告げて、クラウド中心の開発生活を始めるまで](https://qiita.com/cognitom/items/c489991a05f9abac748f)
