@@ -6,7 +6,6 @@ INITIALIZED_FLAG=".startup_script_initialized"
 
 main()
 {
-  # tell_my_ip_address_to_dns
   if test -e $INITIALIZED_FLAG
   then
     # Startup Scripts
@@ -43,6 +42,7 @@ setup(){
   sudo apt -y install mosh
   sudo apt -y install tree
   sudo apt -y install ranger
+  sudo apt -y install neovim
 
   # Krypton CLI for key management
   curl https://krypt.co/kr | sh
@@ -58,7 +58,6 @@ setup(){
 
   sudo apt update
   sudo apt -y install docker-ce docker-ce-cli containerd.io
-# sudo apt-get install docker-ce=<VERSION_STRING> docker-ce-cli=<VERSION_STRING> containerd.io
 
   # Git
   sudo -i -u "${USERNAME}" git config --global user.name "Masatoshi Katabuchi"
@@ -69,12 +68,11 @@ setup(){
 
   ### pip packages
   #sudo pip install django flask django-widget-tweaks django-ckeditor beautifulsoup4 requests classifier SymPy ipython
-  sudo apt -y install neovim
 
-  git clone git://github.com/mattocci27/dotfiles.git ${HOME}/dotfiles
-  cd ${HOME}/dotfiles
+  # dotfiles
+  sudo git clone git://github.com/mattocci27/dotfiles.git ~/dotfiles
+  cd ~/dotfiles
   sh ./setup_gce.sh
-
 }
 
 # Update on each startup except the first time
