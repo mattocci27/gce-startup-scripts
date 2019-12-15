@@ -68,11 +68,13 @@ setup(){
 
   ### pip packages
   #sudo pip install django flask django-widget-tweaks django-ckeditor beautifulsoup4 requests classifier SymPy ipython
+  # dotfiles
+  sudo -u ${USERNAME} bash -c 'git clone git://github.com/mattocci27/dotfiles.git /home/${USERNAME}/dotfiles; cd /home/${USERNAME}/dotfiles; sh ./setup_gce.sh'
 
   # dotfiles
-  git clone git://github.com/mattocci27/dotfiles.git /home/${USERNAME}/dotfiles
-  cd /home/${USERNAME}/dotfiles
-  sh ./setup_gce.sh
+  #git clone git://github.com/mattocci27/dotfiles.git /home/${USERNAME}/dotfiles
+  #cd /home/${USERNAME}/dotfiles
+  #sh ./setup_gce.sh
 }
 
 # Update on each startup except the first time
