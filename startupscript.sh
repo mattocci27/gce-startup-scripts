@@ -70,8 +70,8 @@ setup(){
   #sudo pip install django flask django-widget-tweaks django-ckeditor beautifulsoup4 requests classifier SymPy ipython
 
   # dotfiles
-  git clone git://github.com/mattocci27/dotfiles.git ${HOME}/${USERNAME}/dotfiles
-  cd ${HOME}/${USERNAME}/dotfiles
+  git clone git://github.com/mattocci27/dotfiles.git /home/${USERNAME}/dotfiles
+  cd /home/${USERNAME}/dotfiles
   sh ./setup_gce.sh
 }
 
