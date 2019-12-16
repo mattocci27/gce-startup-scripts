@@ -34,6 +34,7 @@ setup(){
   sudo apt -y install chromium-browser
   sudo apt -y install python-dev
   sudo apt -y install git
+  sudo apt -y install peco
   sudo apt -y install nodejs-legacy
   sudo apt -y install openjdk-9-jdk
   sudo apt -y install zsh
