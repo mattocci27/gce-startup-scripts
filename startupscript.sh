@@ -35,7 +35,6 @@ setup(){
   sudo apt -y install python-dev
   sudo apt -y install git
   sudo apt -y install peco
-  sudo apt -y install nodejs-legacy
   sudo apt -y install openjdk-9-jdk
   sudo apt -y install zsh
   sudo apt -y install tmux
@@ -44,6 +43,14 @@ setup(){
   sudo apt -y install tree
   sudo apt -y install ranger
   sudo apt -y install neovim
+  sudo apt -y install curl
+  sudo apt -y install software-properties-common
+
+  # nodejs
+  curl -sL https://deb.nodesource.com/setup_12.x | sudo bash -
+  sudo apt install -y nodejs
+  npm install nodemailer
+  npm install request
 
   # Krypton CLI for key management
   curl https://krypt.co/kr | sh
