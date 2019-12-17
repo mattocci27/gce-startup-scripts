@@ -2,7 +2,7 @@
 
 # Settings
 PROJECT_NAME="silver-spark-121023"
-STARTUP_SCRIPT_URL="https://raw.githubusercontent.com/mattocci27/gce_startup_scripts/master/startupscript.sh"
+STARTUP_SCRIPT_URL="https://raw.githubusercontent.com/mattocci27/gce-startup-scripts/git/startupscript.sh"
 
 # Arguments
 INSTANCE_NAME="$1"
