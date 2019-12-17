@@ -38,7 +38,7 @@ gcloud beta compute --project "${PROJECT_NAME}" \
   --boot-disk-size "10" \
   --boot-disk-type "pd-standard" \
   --boot-disk-device-name "${INSTANCE_NAME}" \
-  --metadata-from-file startup-script="${TEMP}"
+  --metadata-from-file startup-script="${TEMP}" \
   --tags "http-server"
 
 rm "${TEMP}"
