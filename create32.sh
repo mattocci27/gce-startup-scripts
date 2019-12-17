@@ -2,7 +2,7 @@
 
 # Settings
 PROJECT_NAME="silver-spark-121023"
-STARTUP_SCRIPT_URL="https://raw.githubusercontent.com/mattocci27/gce_startup_scripts/master/startupscript.sh"
+STARTUP_SCRIPT_URL="https://raw.githubusercontent.com/mattocci27/gce_startup_scripts/git/startupscript.sh"
 
 # Arguments
 INSTANCE_NAME="$1"
@@ -28,14 +28,14 @@ SERVICE_ACCOUNT=$(\
 gcloud beta compute --project "${PROJECT_NAME}" \
   instances create "${INSTANCE_NAME}" \
   --zone "us-central1-a" \
-  --machine-type "g1-small" \
+  --machine-type "n2-standard-32" \
   --maintenance-policy "MIGRATE" \
   --service-account "${SERVICE_ACCOUNT}" \
   --scopes "https://www.googleapis.com/auth/cloud-platform" \
   --min-cpu-platform "Automatic" \
   --image "debian-9-stretch-v20191121" \
   --image-project "debian-cloud" \
-  --boot-disk-size "10" \
+  --boot-disk-size "80" \
   --boot-disk-type "pd-standard" \
   --boot-disk-device-name "${INSTANCE_NAME}" \
   --metadata-from-file startup-script="${TEMP}"
