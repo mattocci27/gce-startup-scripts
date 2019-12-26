@@ -75,7 +75,14 @@ setup(){
   sudo -u ${USERNAME} bash -c \
     'git clone git://github.com/mattocci27/dotfiles.git \
     /home/${USERNAME}/dotfiles; cd /home/${USERNAME}/dotfiles; \
-    sh ./setup_gce.sh'
+    sh ./setup_gce.sh \
+    cd'
+ 
+  # gotop
+  sudo -u ${USERNAME} bash -c \
+    'git clone --depth 1 https://github.com/cjbassi/gotop /tmp/gotop \
+    /tmp/gotop/scripts/download.sh \
+    cp gotop /usr/bin/gotop'
 }
 
 # Update on each startup except the first time
