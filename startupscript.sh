@@ -49,7 +49,7 @@ setup(){
   npm install request
 
   # Krypton CLI for key management
-  curl https://krypt.co/kr | sh
+  curl -L https://krypt.co/kr | sh
 
   # docker
   curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
