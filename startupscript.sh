@@ -1,7 +1,6 @@
 #!/bin/sh
 
 USERNAME=mattocci
-
 DNS_ZONE_NAME=$(gcloud compute project-info describe --format "value(dnsZoneName)")
 ZONE=$(gcloud dns record-sets list --zone ${DNS_ZONE_NAME} --limit 1 --format "value(name)")
 
@@ -27,14 +26,14 @@ setup(){
   # Foundamental tools
   sudo apt update
   sudo apt install -y build-essential
-  sudo apt install -y chromium-browser
   sudo apt install -y python-dev
   sudo apt install -y git
   sudo apt install -y peco
+  sudo apt install -y xsel
   sudo apt install -y openvpn
   sudo apt install -y zsh
   sudo apt install -y tmux
-  sudo apt install -y clang
+  #sudo apt install -y clang
   sudo apt install -y mosh
   sudo apt install -y tree
   sudo apt install -y ranger
