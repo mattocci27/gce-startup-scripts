@@ -33,9 +33,9 @@ gcloud beta compute --project "${PROJECT_NAME}" \
   --service-account "${SERVICE_ACCOUNT}" \
   --scopes "https://www.googleapis.com/auth/cloud-platform" \
   --min-cpu-platform "Automatic" \
-  --image "debian-9-stretch-v20191121" \
+  --image "debian-10-buster-v20191210" \
   --image-project "debian-cloud" \
-  --boot-disk-size "10" \
+  --boot-disk-size "40" \
   --boot-disk-type "pd-standard" \
   --boot-disk-device-name "${INSTANCE_NAME}" \
   --metadata-from-file startup-script="${TEMP}" \
