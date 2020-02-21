@@ -1,6 +1,6 @@
 #!/bin/sh
 
-USERNAME=mattocci
+USERNAME="mattocci"
 DNS_ZONE_NAME=$(gcloud compute project-info describe --format "value(dnsZoneName)")
 ZONE=$(gcloud dns record-sets list --zone ${DNS_ZONE_NAME} --limit 1 --format "value(name)")
 
