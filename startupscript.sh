@@ -9,13 +9,16 @@ INITIALIZED_FLAG=".startup_script_initialized"
 main()
 {
 
-  tell_my_ip_address_to_dns
   if test -e $INITIALIZED_FLAG
   then
     # Startup Scripts
+    tell_my_ip_address_to_dns
     update
   else
     # Only first time
+    sudo apt update
+    sudo apt install -y dnsutils
+    tell_my_ip_address_to_dns
     setup
     touch $INITIALIZED_FLAG
   fi
@@ -24,7 +27,7 @@ main()
 # Installation and settings
 setup(){
   # Foundamental tools
-  sudo apt update
+  #sudo apt update
   sudo apt install -y build-essential
   sudo apt install -y python-dev
   sudo apt install -y git
