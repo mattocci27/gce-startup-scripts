@@ -44,4 +44,4 @@ gcloud beta compute --project "${PROJECT_NAME}" \
     startup-script-url="${STARTUP_SCRIPT_URL}" \
   --tags "http-server"
 
-rm "${TEMP}"
+#rm "${TEMP}"
