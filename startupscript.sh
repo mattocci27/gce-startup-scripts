@@ -1,8 +1,10 @@
 #!/bin/sh
 
 USERNAME="mattocci"
-DNS_ZONE_NAME=$(gcloud compute project-info describe --format "value(dnsZoneName)")
-ZONE=$(gcloud dns record-sets list --zone ${DNS_ZONE_NAME} --limit 1 --format "value(name)")
+DNS_ZONE_NAME="mattocci-dev"
+ZONE="mattocci.dev"
+#DNS_ZONE_NAME=$(gcloud compute project-info describe --format "value(dnsZoneName)")
+#ZONE=$(gcloud dns record-sets list --zone ${DNS_ZONE_NAME} --limit 1 --format "value(name)")
 
 INITIALIZED_FLAG=".startup_script_initialized"
 
@@ -102,8 +104,8 @@ tell_my_ip_address_to_dns()
   HOSTNAME=$(hostname)
 
   # Get the ip address which is used last time
-  LAST_PUBLIC_ADDRESS=$(host "public.${HOSTNAME}.${ZONE}" | sed -rn 's@^.* has address @@p')
-  LAST_PRIVATE_ADDRESS=$(host "${HOSTNAME}.${ZONE}" | sed -rn 's@^.* has address @@p')
+  LAST_PUBLIC_ADDRESS=$(host "${HOSTNAME}.e.${ZONE}" | sed -rn 's@^.* has address @@p')
+  LAST_PRIVATE_ADDRESS=$(host "${HOSTNAME}.i.${ZONE}" | sed -rn 's@^.* has address @@p')
 
   # Get the current public ip address via Metadata API
   METADATA_SERVER="http://metadata.google.internal/computeMetadata/v1"
@@ -119,18 +121,18 @@ tell_my_ip_address_to_dns()
   if test "$LAST_PUBLIC_ADDRESS" != ""
   then
     gcloud dns record-sets transaction remove -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" \
-      --name "public.${HOSTNAME}.${ZONE}" --ttl 300 --type A "$LAST_PUBLIC_ADDRESS"
+      --name "${HOSTNAME}.e.${ZONE}" --ttl 300 --type A "$LAST_PUBLIC_ADDRESS"
   fi
   gcloud dns record-sets transaction add -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" \
-    --name "public.${HOSTNAME}.${ZONE}" --ttl 300 --type A "$PUBLIC_ADDRESS"
+    --name "${HOSTNAME}.e.${ZONE}" --ttl 300 --type A "$PUBLIC_ADDRESS"
   
   if test "$LAST_PRIVATE_ADDRESS" != ""
   then
     gcloud dns record-sets transaction remove -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" \
-      --name "${HOSTNAME}.${ZONE}" --ttl 300 --type A "$LAST_PRIVATE_ADDRESS"
+      --name "${HOSTNAME}.i.${ZONE}" --ttl 300 --type A "$LAST_PRIVATE_ADDRESS"
   fi
   gcloud dns record-sets transaction add -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" \
-    --name "${HOSTNAME}.${ZONE}" --ttl 300 --type A "$PRIVATE_ADDRESS"
+    --name "${HOSTNAME}.i.${ZONE}" --ttl 300 --type A "$PRIVATE_ADDRESS"
   gcloud dns record-sets transaction execute -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}"
 }
 
