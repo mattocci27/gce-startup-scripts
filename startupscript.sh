@@ -33,12 +33,14 @@ setup(){
   sudo apt install -y build-essential
   sudo apt install -y python-dev
   sudo apt install -y git
+  sudo apt install -y wget
   sudo apt install -y peco
   sudo apt install -y xsel
   sudo apt install -y openvpn
   sudo apt install -y zsh
   sudo apt install -y tmux
-  #sudo apt install -y clang
+  sudo apt install -y exa
+  sudo apt install -y ripgrep
   sudo apt install -y mosh
   sudo apt install -y tree
   sudo apt install -y ranger
@@ -72,9 +74,6 @@ setup(){
   ### Python packages
   sudo apt -y install python-pip python-virtualenv python-numpy python-matplotlib
 
-  ### pip packages
-  #sudo pip install django flask django-widget-tweaks django-ckeditor beautifulsoup4 requests classifier SymPy ipython
-
   # dotfiles
   sudo -u ${USERNAME} bash -c \
     'git clone git://github.com/mattocci27/dotfiles.git \
@@ -84,10 +83,14 @@ setup(){
     cd'
  
   # gotop
-  sudo -u ${USERNAME} bash -c \
-    'git clone --depth 1 https://github.com/cjbassi/gotop /tmp/gotop; \
-    /tmp/gotop/scripts/download.sh; \
-    sudo mv gotop /usr/bin/gotop'
+  git clone --depth 1 https://github.com/cjbassi/gotop /tmp/gotop
+  sudo bash /tmp/gotop/scripts/download.sh
+  sudo mv gotop /usr/bin/gotop
+
+  # bat
+  wget -O /tmp/bat.deb TEMP_DEB https://github.com/sharkdp/bat/releases/download/v0.12.1/bat_0.12.1_amd64.deb
+  sudo dpkg -i /tmp/bat.deb
+  sudo rm /tmp/bat.deb
 }
 
 # Update on each startup except the first time
