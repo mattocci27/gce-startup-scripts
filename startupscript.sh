@@ -58,14 +58,11 @@ setup(){
   curl -L https://krypt.co/kr | sh
 
   # docker
-  curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
   sudo apt-key fingerprint 0EBFCD88
-  sudo add-apt-repository \
-     "deb [arch=amd64] https://download.docker.com/linux/debian \
-     $(lsb_release -cs) \
-     stable"
-  sudo apt update
-  sudo apt -y install docker-ce docker-ce-cli containerd.io
+  curl -fsSL https://get.docker.com -o get-docker.sh
+  sudo sh get-docker.sh
+  sudo usermod -aG docker mattocci
 
   # Git
   sudo -i -u "${USERNAME}" git config --global user.name "Masatoshi Katabuchi"
