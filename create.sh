@@ -29,13 +29,13 @@ SERVICE_ACCOUNT=$(\
 gcloud beta compute --project "${PROJECT_NAME}" \
   instances create "${INSTANCE_NAME}" \
   --zone "us-central1-a" \
-  --machine-type "g1-small" \
+  --machine-type "e2-small" \
   --maintenance-policy "MIGRATE" \
   --service-account "${SERVICE_ACCOUNT}" \
   --scopes "https://www.googleapis.com/auth/cloud-platform" \
   --min-cpu-platform "Automatic" \
-  --image "debian-10-buster-v20200210" \
-  --image-project "debian-cloud" \
+  --image-project ubuntu-os-cloud \
+  --image-family ubuntu-2004-lts \
   --boot-disk-size "40" \
   --boot-disk-type "pd-standard" \
   --boot-disk-device-name "${INSTANCE_NAME}" \

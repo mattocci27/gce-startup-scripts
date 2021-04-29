@@ -30,23 +30,23 @@ main()
 setup(){
   # Foundamental tools
   #sudo apt update
-  sudo apt install -y build-essential
-  sudo apt install -y python-dev
-  sudo apt install -y git
-  sudo apt install -y wget
-  sudo apt install -y peco
-  sudo apt install -y xsel
-  sudo apt install -y openvpn
-  sudo apt install -y zsh
-  sudo apt install -y tmux
-  sudo apt install -y exa
-  sudo apt install -y ripgrep
-  sudo apt install -y mosh
-  sudo apt install -y tree
-  sudo apt install -y ranger
-  sudo apt install -y neovim
-  sudo apt install -y curl
-  sudo apt install -y software-properties-common
+  sudo apt install -y build-essential \
+    python-dev \
+    git \
+    wget \
+    peco \
+    xsel \
+    openvpn \
+    zsh \
+    tmux \
+    exa \
+    ripgrep \
+    mosh \
+    tree \
+    ranger \
+    neovim \
+    curl \
+    software-properties-common
 
   # nodejs
   curl -sL https://deb.nodesource.com/setup_12.x | sudo bash -
@@ -58,10 +58,23 @@ setup(){
   curl -L https://krypt.co/kr | sh
 
   # docker
-  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-  sudo apt-key fingerprint 0EBFCD88
-  curl -fsSL https://get.docker.com -o get-docker.sh
-  sudo sh get-docker.sh
+  sudo apt-get install \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release
+
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+ echo \
+  "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+  sudo apt update 
+  sudo apt install  docker-ce docker-ce-cli containerd.io
+
+
   sudo usermod -aG docker mattocci
 
   # Git
