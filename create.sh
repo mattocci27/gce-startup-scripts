@@ -2,8 +2,8 @@
 
 # Settings
 PROJECT_NAME="silver-spark-121023"
-STARTUP_SCRIPT_URL="https://raw.githubusercontent.com/mattocci27/gce-startup-scripts/git/startupscript.sh"
 DNS_ZONE_NAME="mattocci-dev"
+STARTUP_SCRIPT_URL="https://raw.githubusercontent.com/mattocci27/gce-startup-scripts/git/startupscript.sh"
 
 # Arguments
 INSTANCE_NAME="$1"
@@ -15,8 +15,8 @@ then
 fi
 
 # Download startup script
-#TEMP=$(mktemp -u)
-#curl "${STARTUP_SCRIPT_URL}" > "${TEMP}"
+TEMP=$(mktemp -u)
+curl "${STARTUP_SCRIPT_URL}" > "${TEMP}"
 
 # Get Service Account information
 SERVICE_ACCOUNT=$(\
@@ -39,9 +39,7 @@ gcloud beta compute --project "${PROJECT_NAME}" \
   --boot-disk-size "40" \
   --boot-disk-type "pd-standard" \
   --boot-disk-device-name "${INSTANCE_NAME}" \
-  --metadata \
-    dnsZoneName="${DNS_ZONE_NAME}",\
-    startup-script-url="${STARTUP_SCRIPT_URL}" \
+  --metadata dnsZoneName="${DNS_ZONE_NAME}",startup-script-url="${STARTUP_SCRIPT_URL}" \
   --tags "http-server"
 
 #rm "${TEMP}"
