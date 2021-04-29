@@ -35,6 +35,7 @@ setup(){
     git \
     wget \
     peco \
+    fzf \
     xsel \
     openvpn \
     zsh \
@@ -89,7 +90,8 @@ setup(){
     'git clone git://github.com/mattocci27/dotfiles.git \
     $HOME/dotfiles; \
     cd $HOME/dotfiles; \
-    sh ./setup_gce.sh; \
+    ./link_files.sh mkdir; \
+    ./link_files.sh links; \
     cd'
  
   # gotop
