@@ -58,32 +58,52 @@ setup(){
   # Krypton CLI for key management
   curl -L https://krypt.co/kr | sh
 
-  # docker
-  sudo apt-get install \
+  # R
+  sudo apt install -y dirmngr \
+    gnupg \
     apt-transport-https \
     ca-certificates \
-    curl \
-    gnupg \
-    lsb-release
+    software-properties-common
+
+  sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
+
+  sudo add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu focal-cran40/'
+
+  sudo apt install -y r-base
+
+  echo "Installing python..."
+  sudo apt install -y \
+    libpython3-dev \
+    python3-dev \
+    python3-pip \
+    python3-venv \
+    python3-virtualenv \
+    docker-compose
+
+  echo "Installing docker..."
+  # docker 
+  sudo apt-get install -y \
+      apt-transport-https \
+      ca-certificates \
+      curl \
+      gnupg \
+      lsb-release
 
   curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 
- echo \
-  "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  echo \
+    "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+    $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-  sudo apt update 
-  sudo apt install  docker-ce docker-ce-cli containerd.io
+  sudo apt-get update -y
+  sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 
+  sudo usermod -aG docker $USER
 
-  sudo usermod -aG docker mattocci
 
   # Git
   sudo -i -u "${USERNAME}" git config --global user.name "Masatoshi Katabuchi"
   sudo -i -u "${USERNAME}" git config --global user.email "mattocci27@gmail.com"
-
-  ### Python packages
-  sudo apt -y install python-pip python-virtualenv python-numpy python-matplotlib
 
   # dotfiles
   sudo -u ${USERNAME} bash -c \
