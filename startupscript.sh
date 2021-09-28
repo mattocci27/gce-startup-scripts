@@ -40,8 +40,6 @@ setup(){
     openvpn \
     zsh \
     tmux \
-    exa \
-    ripgrep \
     mosh \
     tree \
     ranger \
@@ -79,6 +77,9 @@ setup(){
     python3-venv \
     python3-virtualenv \
     docker-compose
+
+  
+  pip install poetry
 
   echo "Installing docker..."
   # docker 
@@ -123,6 +124,30 @@ setup(){
   wget -O /tmp/bat.deb TEMP_DEB https://github.com/sharkdp/bat/releases/download/v0.12.1/bat_0.12.1_amd64.deb
   sudo dpkg -i /tmp/bat.deb
   sudo rm /tmp/bat.deb
+
+  ## after simlinks
+
+  # rust 
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+  cargo install exa ripgrep
+  
+  # nvim
+  curl -fLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
+      https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+  nvim +PlugInstall +qall
+ 
+  # zplug
+  curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
+
+  # tmux
+  git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm
+
+  # swap
+  fallocate -l 4G /swapfile
+  chmod 600 /swapfile
+  mkswap /swapfile
+  swapon /swapfile
+  echo "/swapfile swap swap defaults 0 0" >> /etc/fstab
 }
 
 # Update on each startup except the first time
