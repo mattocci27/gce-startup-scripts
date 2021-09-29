@@ -78,8 +78,6 @@ setup(){
     python3-virtualenv \
     docker-compose
 
-  
-  pip install poetry
 
   echo "Installing docker..."
   # docker 
@@ -125,29 +123,31 @@ setup(){
   sudo dpkg -i /tmp/bat.deb
   sudo rm /tmp/bat.deb
 
-  ## after simlinks
+  ## after simlinks -- this shuld be done $HOME
 
   # rust 
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-  cargo install exa ripgrep
-  
-  # nvim
-  curl -fLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
-      https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
-  nvim +PlugInstall +qall
+  #curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+  #cargo install exa ripgrep
  
-  # zplug
-  curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
-
-  # tmux
-  git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm
-
-  # swap
-  fallocate -l 4G /swapfile
-  chmod 600 /swapfile
-  mkswap /swapfile
-  swapon /swapfile
-  echo "/swapfile swap swap defaults 0 0" >> /etc/fstab
+  #pip install poetry
+# 
+#  # nvim
+#  curl -fLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
+#      https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+#  nvim +PlugInstall +qall
+# 
+#  # zplug
+#  curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
+#
+#  # tmux
+#  git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm
+#
+#  # swap
+#  fallocate -l 4G /swapfile
+#  chmod 600 /swapfile
+#  mkswap /swapfile
+#  swapon /swapfile
+#  echo "/swapfile swap swap defaults 0 0" >> /etc/fstab
 }
 
 # Update on each startup except the first time
