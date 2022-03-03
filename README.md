@@ -1,4 +1,4 @@
-# Startup scripts for GCE
+# My startup scripts for GCE
 
 ## Before running create.sh
 
@@ -8,12 +8,12 @@
 ## Usage
 
 ```
-sh create.sh instance-name
+sh create.sh instance-name machine-type
 ```
 
 - use google cloud shell
 - save create.sh in the cloud console
-- for example, `sh create.sh hello` creates a hello instance.
+- for example, `sh create.sh hello e2-small` creates an e2-small instance named hello.
 
 ![cloud_console](./imgs/startup.png)
 

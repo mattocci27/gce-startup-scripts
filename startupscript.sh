@@ -31,7 +31,6 @@ setup(){
   # Foundamental tools
   #sudo apt update
   sudo apt install -y build-essential \
-    python-dev \
     git \
     wget \
     peco \
@@ -45,10 +44,12 @@ setup(){
     ranger \
     neovim \
     curl \
+    cargo \
+    stow \
     software-properties-common
 
   # nodejs
-  curl -sL https://deb.nodesource.com/setup_12.x | sudo bash -
+  curl -sL https://deb.nodesource.com/setup_16.x | sudo bash -
   sudo apt install -y nodejs
   npm install nodemailer
   npm install request
@@ -109,45 +110,21 @@ setup(){
     'git clone git://github.com/mattocci27/dotfiles.git \
     $HOME/dotfiles; \
     cd $HOME/dotfiles; \
-    ./link_files.sh mkdir; \
-    ./link_files.sh links; \
+    bash scripts/deploy.sh; \
     cd'
  
-  # gotop
-  git clone --depth 1 https://github.com/cjbassi/gotop /tmp/gotop
-  sudo bash /tmp/gotop/scripts/download.sh
-  sudo mv gotop /usr/bin/gotop
-
-  # bat
-  wget -O /tmp/bat.deb TEMP_DEB https://github.com/sharkdp/bat/releases/download/v0.12.1/bat_0.12.1_amd64.deb
-  sudo dpkg -i /tmp/bat.deb
-  sudo rm /tmp/bat.deb
-
-  ## after simlinks -- this shuld be done $HOME
-
   # rust 
-  #curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-  #cargo install exa ripgrep
- 
-  #pip install poetry
-# 
-#  # nvim
-#  curl -fLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
-#      https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
-#  nvim +PlugInstall +qall
-# 
-#  # zplug
-#  curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
-#
-#  # tmux
-#  git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm
-#
-#  # swap
-#  fallocate -l 4G /swapfile
-#  chmod 600 /swapfile
-#  mkswap /swapfile
-#  swapon /swapfile
-#  echo "/swapfile swap swap defaults 0 0" >> /etc/fstab
+  cargo install exa ytop bat fd ripgrep gitui
+
+  # poetry
+  curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+
+  # swap
+  fallocate -l 4G /swapfile
+  chmod 600 /swapfile
+  mkswap /swapfile
+  swapon /swapfile
+  echo "/swapfile swap swap defaults 0 0" >> /etc/fstab
 }
 
 # Update on each startup except the first time
