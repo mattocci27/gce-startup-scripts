@@ -36,8 +36,8 @@ gcloud beta compute --project "${PROJECT_NAME}" \
   --scopes "https://www.googleapis.com/auth/cloud-platform" \
   --min-cpu-platform "Automatic" \
   --image-project ubuntu-os-cloud \
-  --image-family ubuntu-2004-lts \
-  --boot-disk-size "60" \
+  --image-family ubuntu-2204-lts \
+  --boot-disk-size "160" \
   --boot-disk-type "pd-standard" \
   --boot-disk-device-name "${INSTANCE_NAME}" \
   --metadata dnsZoneName="${DNS_ZONE_NAME}",startup-script-url="${STARTUP_SCRIPT_URL}" \

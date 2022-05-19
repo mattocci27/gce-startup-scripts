@@ -29,7 +29,8 @@ main()
 # Installation and settings
 setup(){
   # Foundamental tools
-  #sudo apt update
+  sudo apt update
+  sudo apt upgrade -y
   sudo apt install -y build-essential \
     git \
     wget \
@@ -46,11 +47,11 @@ setup(){
     curl \
     cargo \
     stow \
+    nodejs \
+    npm  \
     software-properties-common
 
   # nodejs
-  curl -sL https://deb.nodesource.com/setup_16.x | sudo bash -
-  sudo apt install -y nodejs
   npm install nodemailer
   npm install request
 
@@ -59,15 +60,13 @@ setup(){
 
   # R
   sudo apt install -y dirmngr \
-    gnupg \
-    apt-transport-https \
-    ca-certificates \
     software-properties-common
 
-  sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
+  wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | sudo tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
 
-  sudo add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu focal-cran40/'
+  sudo add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
 
+  sudo apt update
   sudo apt install -y r-base
 
   echo "Installing python..."
@@ -82,21 +81,7 @@ setup(){
 
   echo "Installing docker..."
   # docker 
-  sudo apt-get install -y \
-      apt-transport-https \
-      ca-certificates \
-      curl \
-      gnupg \
-      lsb-release
-
-  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-
-  echo \
-    "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
-    $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-  sudo apt-get update -y
-  sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+  sudo apt install -y docker.io
 
   sudo usermod -aG docker $USER
 
