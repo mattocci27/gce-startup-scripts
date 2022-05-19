@@ -51,12 +51,16 @@ setup(){
     npm  \
     software-properties-common
 
-  # nodejs
-  npm install nodemailer
-  npm install request
+  # # nodejs
+  # npm update
+  # npm install nodemailer
+  # npm install request
 
-  # Krypton CLI for key management
-  curl -L https://krypt.co/kr | sh
+  # Akamai CLI for key management
+  curl -SsL https://akamai.github.io/akr-pkg/debian/KEY.gpg | sudo apt-key add -
+  sudo curl -SsL -o /etc/apt/sources.list.d/akr.list https://akamai.github.io/akr-pkg/debian/akr.list
+  sudo apt update
+  sudo apt install -y akr
 
   # R
   sudo apt install -y dirmngr \
@@ -85,31 +89,26 @@ setup(){
 
   sudo usermod -aG docker $USER
 
-
-  # Git
-  sudo -i -u "${USERNAME}" git config --global user.name "Masatoshi Katabuchi"
-  sudo -i -u "${USERNAME}" git config --global user.email "mattocci27@gmail.com"
-
   # dotfiles
   sudo -u ${USERNAME} bash -c \
-    'git clone git://github.com/mattocci27/dotfiles.git \
+    'git clone https://github.com/mattocci27/dotfiles.git \
     $HOME/dotfiles; \
     cd $HOME/dotfiles; \
-    bash scripts/deploy.sh; \
+    bash scripts/.dotscripts/deploy.sh; \
     cd'
  
   # rust 
   cargo install exa ytop bat fd ripgrep gitui
 
   # poetry
-  curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+  curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
 
-  # swap
-  fallocate -l 4G /swapfile
-  chmod 600 /swapfile
-  mkswap /swapfile
-  swapon /swapfile
-  echo "/swapfile swap swap defaults 0 0" >> /etc/fstab
+  # # swap
+  # fallocate -l 4G /swapfile
+  # chmod 600 /swapfile
+  # mkswap /swapfile
+  # swapon /swapfile
+  # echo "/swapfile swap swap defaults 0 0" >> /etc/fstab
 }
 
 # Update on each startup except the first time
