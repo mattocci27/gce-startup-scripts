@@ -8,18 +8,34 @@ PROJECT_NAME="silver-spark-121023"
 DNS_ZONE_NAME="mattocci-dev"
 ZONE="asia-east1-a"
 STARTUP_SCRIPT_URL="https://raw.githubusercontent.com/mattocci27/gce-startup-scripts/master/startupscript.sh"
-DEFAULT_MACHINE_TYPE="e2-small"
 BOOT_DISK_SIZE="60"
 
 # Arguments
 INSTANCE_NAME="$1"
-MACHINE_TYPE="${2:-$DEFAULT_MACHINE_TYPE}"
+ARCHITECTURE="${2:-amd}"
+MACHINE_TYPE="$3"
+
+# Set defaults based on architecture
+if test "$ARCHITECTURE" = "arm"; then
+  DEFAULT_MACHINE_TYPE="c4a-standard-2"
+  IMAGE_FAMILY="ubuntu-2404-lts-arm64"
+elif test "$ARCHITECTURE" = "amd"; then
+  DEFAULT_MACHINE_TYPE="e2-standard-2"
+  IMAGE_FAMILY="ubuntu-2404-lts-amd64"
+else
+  echo "[Error] Invalid architecture '$ARCHITECTURE'. Use 'arm' or 'amd'." 1>&2
+  exit 1
+fi
+
+# Set machine type default if not provided
+MACHINE_TYPE="${MACHINE_TYPE:-$DEFAULT_MACHINE_TYPE}"
 
 # Validation
 if test "$INSTANCE_NAME" = ""
 then
   echo "[Error] Instance name required." 1>&2
-  echo "Usage: $0 <instance-name> [machine-type]" 1>&2
+  echo "Usage: $0 <instance-name> [architecture] [machine-type]" 1>&2
+  echo "  architecture: 'arm' or 'amd' (default: amd)" 1>&2
   exit 1
 fi
 
@@ -67,7 +83,7 @@ fi
 echo "Using service account: $SERVICE_ACCOUNT"
 
 # Create instance
-echo "Creating instance '${INSTANCE_NAME}' with machine type '${MACHINE_TYPE}'..."
+echo "Creating instance '${INSTANCE_NAME}' with machine type '${MACHINE_TYPE}' (${ARCHITECTURE} architecture)..."
 
 if ! gcloud compute --project "${PROJECT_NAME}" \
   instances create "${INSTANCE_NAME}" \
@@ -78,7 +94,7 @@ if ! gcloud compute --project "${PROJECT_NAME}" \
   --scopes "https://www.googleapis.com/auth/cloud-platform" \
   --min-cpu-platform "Automatic" \
   --image-project ubuntu-os-cloud \
-  --image-family ubuntu-2404-lts \
+  --image-family "${IMAGE_FAMILY}" \
   --boot-disk-size "${BOOT_DISK_SIZE}" \
   --boot-disk-type "pd-balanced" \
   --boot-disk-device-name "${INSTANCE_NAME}" \

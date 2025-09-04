@@ -28,3 +28,14 @@ sh create.sh instance-name machine-type
 
 - [Macに別れを告げて、クラウド中心の開発生活を始めるまで](https://qiita.com/cognitom/items/c489991a05f9abac748f)
 
+
+I want to add one more argument to choose ARM or AMD.
+if arm
+  use
+    --image-family ubuntu-2404-lts-arm64
+   DEFAULT_MACHINE_TYPE="c4a-standard-2"
+
+if amd
+  use
+    --image-family ubuntu-2404-lts-amd64
+   DEFAULT_MACHINE_TYPE="e2-standard-2"
