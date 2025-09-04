@@ -52,14 +52,14 @@ main()
     touch "$INITIALIZED_FLAG"
     log "First-time setup completed"
   fi
-  
+
   log "Startup script execution completed successfully"
 }
 
 # Installation and settings
 setup(){
   log "Starting package installation and system setup"
-  
+
   # Fundamental tools
   log "Updating package lists and upgrading system"
   sudo apt-get update || { log "Failed to update package lists"; exit 1; }
@@ -68,6 +68,7 @@ setup(){
   sudo apt-get install -y xsel \
     ca-certificates \
     build-essential \
+    golang-go \
     neovim \
     peco \
     fzf \
@@ -86,19 +87,52 @@ setup(){
     stow \
     bat \
     eza \
-    apptainer \
     openssh-server \
     pipx || { log "Failed to install essential packages"; exit 1; }
 
-  # Akamai CLI for key management
+  # Akamai CLI installation
   log "Installing Akamai CLI"
-  sudo mkdir -p /etc/apt/keyrings
-  if curl -fsSL https://akamai.github.io/akr-pkg/debian/KEY.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/akamai-akr.gpg; then
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/akamai-akr.gpg] https://akamai.github.io/akr-pkg/debian stable main" | sudo tee /etc/apt/sources.list.d/akr.list > /dev/null
-    sudo apt-get update
-    sudo apt-get install -y akr || log "Warning: Failed to install Akamai CLI"
+  AKAMAI_CLI_VERSION="latest"
+  ARCH=$(dpkg --print-architecture)
+
+  # Map architecture names to match GitHub releases
+  case "$ARCH" in
+    amd64) CLI_ARCH="linuxamd64" ;;
+    arm64) CLI_ARCH="linuxarm64" ;;
+    *) CLI_ARCH="linuxamd64" ;; # fallback to amd64
+  esac
+
+  # akamai
+  git clone https://github.com/akamai/cli.git
+    # from the repo root
+  mkdir -p dist
+  # ARM64 (aarch64) Linux
+  GOOS=linux GOARCH=arm64 CGO_ENABLED=0 \
+    go build -trimpath -ldflags "-s -w" -o dist/akamai ./cli
+  # (Optional) 32-bit ARM v7
+  # GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 \
+  #   go build -trimpath -ldflags "-s -w" -o dist/akamai ./cli
+  # Check the binary
+  ls -lh dist/akamai
+  file dist/akamai    # should say: ELF 64-bit, ARM aarch64 (for arm64)
+  # Install
+  sudo install -m755 dist/akamai /usr/local/bin/akamai
+  # Test
+  akamai --version
+
+  if curl -fsSL "https://github.com/akamai/cli/releases/latest/download/akamai-${CLI_ARCH}" -o /tmp/akamai; then
+    sudo chmod +x /tmp/akamai
+    sudo mv /tmp/akamai /usr/local/bin/akamai
+    log "Akamai CLI installation completed"
+
+    # Verify installation
+    if /usr/local/bin/akamai --version >/dev/null 2>&1; then
+      log "Akamai CLI verified successfully"
+    else
+      log "Warning: Akamai CLI verification failed"
+    fi
   else
-    log "Warning: Failed to add Akamai CLI repository"
+    log "Warning: Failed to download Akamai CLI"
   fi
 
   log "Installing Docker"
@@ -106,16 +140,16 @@ setup(){
   sudo apt-get update
   sudo apt-get install -y ca-certificates curl || { log "Failed to install Docker prerequisites"; exit 1; }
   sudo install -m 0755 -d /etc/apt/keyrings
-  
+
   if sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc; then
     sudo chmod a+r /etc/apt/keyrings/docker.asc
-    
+
     # Add the repository to Apt sources:
     echo \
       "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
       $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
       sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-    
+
     sudo apt-get update
     sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || { log "Failed to install Docker"; exit 1; }
     sudo usermod -aG docker "$USER"
@@ -145,7 +179,7 @@ setup(){
   else
     log "Warning: Failed to clone dotfiles repository"
   fi
-  
+
   log "Setup completed successfully"
 }
 
@@ -155,21 +189,21 @@ update()
   log "Running system updates"
   sudo apt-get update || log "Warning: apt update failed"
   sudo apt-get upgrade -y || log "Warning: apt upgrade failed"
-  
+
   # Only run kr upgrade if kr is installed
   if command -v kr > /dev/null 2>&1; then
     kr upgrade || log "Warning: kr upgrade failed"
   else
     log "Warning: kr command not found, skipping kr upgrade"
   fi
-  
+
   log "System updates completed"
 }
 
 tell_my_ip_address_to_dns()
 {
   log "Updating DNS records"
-  
+
   # Get the hostname of the instance
   HOSTNAME=$(hostname)
   log "Instance hostname: $HOSTNAME"
@@ -185,7 +219,7 @@ tell_my_ip_address_to_dns()
 
   # Get the current local ip address
   PRIVATE_ADDRESS=$(hostname -i 2>/dev/null || { log "Warning: Failed to get private IP"; echo ""; })
-  
+
   log "Current public IP: $PUBLIC_ADDRESS"
   log "Current private IP: $PRIVATE_ADDRESS"
 
@@ -193,14 +227,14 @@ tell_my_ip_address_to_dns()
   if test -n "$PUBLIC_ADDRESS" && test -n "$PRIVATE_ADDRESS"; then
     TEMP=$(mktemp)
     trap 'rm -f "$TEMP"' EXIT
-    
+
     if gcloud dns record-sets transaction start -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" 2>/dev/null; then
       # Remove old public address record if it exists
       if test -n "$LAST_PUBLIC_ADDRESS" && test "$LAST_PUBLIC_ADDRESS" != "$PUBLIC_ADDRESS"; then
         gcloud dns record-sets transaction remove -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" \
           --name "${HOSTNAME}.e.${ZONE}" --ttl 300 --type A "$LAST_PUBLIC_ADDRESS" 2>/dev/null || true
       fi
-      
+
       # Add new public address record
       gcloud dns record-sets transaction add -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" \
         --name "${HOSTNAME}.e.${ZONE}" --ttl 300 --type A "$PUBLIC_ADDRESS" 2>/dev/null || true
@@ -210,11 +244,11 @@ tell_my_ip_address_to_dns()
         gcloud dns record-sets transaction remove -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" \
           --name "${HOSTNAME}.i.${ZONE}" --ttl 300 --type A "$LAST_PRIVATE_ADDRESS" 2>/dev/null || true
       fi
-      
+
       # Add new private address record
       gcloud dns record-sets transaction add -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" \
         --name "${HOSTNAME}.i.${ZONE}" --ttl 300 --type A "$PRIVATE_ADDRESS" 2>/dev/null || true
-        
+
       # Execute the transaction
       if gcloud dns record-sets transaction execute -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" 2>/dev/null; then
         log "DNS records updated successfully"
