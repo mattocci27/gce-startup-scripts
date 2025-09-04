@@ -102,44 +102,53 @@ setup(){
   ARCH=$(dpkg --print-architecture)
   log "Detected architecture: $ARCH"
 
-  # Map architecture names to match GitHub releases
-  case "$ARCH" in
-    amd64) CLI_ARCH="linuxamd64" ;;
-    arm64) CLI_ARCH="linuxarm64" ;;
-    *) CLI_ARCH="linuxamd64" ;; # fallback to amd64
-  esac
+  # Check if binary is available for this architecture
+  # Note: Akamai CLI only provides Linux binaries for AMD64, not ARM64
+  if test "$ARCH" = "amd64"; then
+    CLI_ARCH="linuxamd64"
+    log "Using Akamai CLI binary: akamai-v2.0.2-${CLI_ARCH}"
+    
+    # Try binary download for AMD64
+    if curl -fsSL "https://github.com/akamai/cli/releases/download/v2.0.2/akamai-v2.0.2-${CLI_ARCH}" -o /tmp/akamai; then
+      log "Successfully downloaded Akamai CLI binary"
+      sudo chmod +x /tmp/akamai
+      sudo mv /tmp/akamai /usr/local/bin/akamai
+      log "Akamai CLI binary installation completed"
 
-  log "Using Akamai CLI binary: akamai-${CLI_ARCH}"
-
-  # Try binary download first (recommended method)
-  if curl -fsSL "https://github.com/akamai/cli/releases/latest/download/akamai-${CLI_ARCH}" -o /tmp/akamai; then
-    log "Successfully downloaded Akamai CLI binary"
-    sudo chmod +x /tmp/akamai
-    sudo mv /tmp/akamai /usr/local/bin/akamai
-    log "Akamai CLI binary installation completed"
-
-    # Verify installation
-    if /usr/local/bin/akamai --version >/dev/null 2>&1; then
-      AKAMAI_VERSION=$(/usr/local/bin/akamai --version 2>/dev/null || echo "unknown")
-      log "Akamai CLI verified successfully - Version: $AKAMAI_VERSION"
+      # Verify installation
+      if /usr/local/bin/akamai --version >/dev/null 2>&1; then
+        AKAMAI_VERSION=$(/usr/local/bin/akamai --version 2>/dev/null || echo "unknown")
+        log "Akamai CLI verified successfully - Version: $AKAMAI_VERSION"
+      else
+        log "Warning: Akamai CLI verification failed"
+      fi
     else
-      log "Warning: Akamai CLI verification failed"
+      log "Warning: Failed to download Akamai CLI binary for AMD64"
     fi
-  else
-    log "Warning: Failed to download Akamai CLI binary, trying source compilation"
-
-    # Fallback to source compilation if golang-go is available
+  fi
+  
+  # For ARM64 or if AMD64 binary download failed, try source compilation
+  if ! command -v akamai >/dev/null 2>&1; then
+    log "Akamai CLI not found, attempting source compilation"
     if command -v go >/dev/null 2>&1; then
-      log "Go compiler found, attempting source compilation"
+      log "Go compiler found, compiling Akamai CLI from source"
       TEMP_DIR=$(mktemp -d)
-      cd "$TEMP_DIR" || { log "Warning: Failed to create temp directory"; return; }
+      cd "$TEMP_DIR" || { log "Warning: Failed to create temp directory"; cd /; return; }
 
       if git clone https://github.com/akamai/cli.git; then
         log "Successfully cloned Akamai CLI repository"
-        cd cli || { log "Warning: Failed to enter cli directory"; return; }
+        cd cli || { log "Warning: Failed to enter cli directory"; cd / && rm -rf "$TEMP_DIR"; return; }
 
         log "Building Akamai CLI from source for architecture: $ARCH"
-        if GOOS=linux GOARCH=$(echo "$ARCH" | sed 's/amd64/amd64/; s/arm64/arm64/') CGO_ENABLED=0 \
+        # Map architecture for Go build
+        GO_ARCH="$ARCH"
+        if test "$ARCH" = "arm64"; then
+          GO_ARCH="arm64"
+        elif test "$ARCH" = "amd64"; then
+          GO_ARCH="amd64"
+        fi
+        
+        if GOOS=linux GOARCH="$GO_ARCH" CGO_ENABLED=0 \
            go build -trimpath -ldflags "-s -w" -o akamai ./cli; then
           log "Successfully built Akamai CLI from source"
           sudo install -m755 akamai /usr/local/bin/akamai
@@ -161,7 +170,7 @@ setup(){
       # Clean up temp directory
       cd / && rm -rf "$TEMP_DIR"
     else
-      log "Warning: Go compiler not available, Akamai CLI installation failed"
+      log "Warning: Go compiler not available, Akamai CLI installation skipped"
     fi
   fi
 
