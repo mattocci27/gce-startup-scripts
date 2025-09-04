@@ -107,28 +107,24 @@ setup(){
   mkdir -p "$KEY_DIR"
   chown "$USERNAME:$USERNAME" "$KEY_DIR"
   chmod 700 "$KEY_DIR"
-
+  
   TMP="$(mktemp)"
-  if gcloud secrets versions access latest --secret="$SECRET_NAME" --project "$PROJECT_NAME" > "$TMP" 2> /tmp/secret_err.log; then
-    # sanity check: does this look like an OpenSSH private key?
+  if gcloud secrets versions access latest --project "$PROJECT_NAME" --secret="$SECRET_NAME" > "$TMP"; then
     if grep -q "BEGIN OPENSSH PRIVATE KEY" "$TMP"; then
       install -o "$USERNAME" -g "$USERNAME" -m 600 "$TMP" "$KEY_PATH"
-      log "SSH key installed from Secret Manager into $KEY_PATH"
+      log "SSH key installed at $KEY_PATH"
     else
-      log "ERROR: Secret payload doesn't look like an OpenSSH private key. Not installing."
-      log "First 2 lines were: $(head -n 2 "$TMP")"
+      log "ERROR: Secret payload did not look like an OpenSSH private key"
       rm -f "$TMP"
       exit 1
     fi
   else
     rc=$?
-    log "ERROR: Failed to access Secret Manager (rc=$rc). Details:"
-    log "$(cat /tmp/secret_err.log)"
+    log "ERROR: Could not access secret $SECRET_NAME (project $PROJECT_NAME)"
     rm -f "$TMP"
     exit $rc
   fi
-
-  # Known_hosts to avoid prompts
+  
   sudo -u "$USERNAME" ssh-keyscan github.com >> "$KEY_DIR/known_hosts" 2>/dev/null
   chmod 644 "$KEY_DIR/known_hosts"
   chown "$USERNAME:$USERNAME" "$KEY_DIR/known_hosts"

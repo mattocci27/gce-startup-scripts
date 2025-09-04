@@ -84,14 +84,19 @@ fi
 
 echo "Using service account: $SERVICE_ACCOUNT"
 
+# Ensure Secret Manager API is enabled
+echo "Ensuring Secret Manager API is enabled..."
+gcloud services enable secretmanager.googleapis.com --project "$PROJECT_NAME"
+
 # Grant service account access to SSH key in Secret Manager
-echo "Granting service account access to SSH key in Secret Manager..."
+echo "Granting Secret Manager accessor to ${SERVICE_ACCOUNT} on project ${PROJECT_NAME}..."
 if gcloud secrets add-iam-policy-binding id_ed25519 \
+  --project "$PROJECT_NAME" \
   --member="serviceAccount:${SERVICE_ACCOUNT}" \
-  --role="roles/secretmanager.secretAccessor" 2>/dev/null; then
+  --role="roles/secretmanager.secretAccessor"; then
   echo "Secret Manager access granted successfully"
 else
-  echo "[Warning] Failed to grant Secret Manager access (key may already have access)"
+  echo "[Warning] Failed to grant Secret Manager access (binding may already exist)"
 fi
 
 # Create instance
