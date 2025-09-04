@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# Exit on error and enable logging
-set -e
+# Enable logging but don't exit on error immediately (we handle errors explicitly)
+set +e
 
 USERNAME="mattocci"
 DNS_ZONE_NAME="mattocci-dev"
@@ -14,7 +14,12 @@ LOG_FILE="/var/log/startup-script.log"
 
 # Logging function
 log() {
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
+  local msg="[$(date '+%Y-%m-%d %H:%M:%S')] $*"
+  echo "$msg"
+  # Try to write to log file, fallback to syslog if permission denied
+  if ! echo "$msg" >> "$LOG_FILE" 2>/dev/null; then
+    logger -t startup-script "$*"
+  fi
 }
 
 # Error handling function
@@ -31,7 +36,7 @@ main()
 {
   log "Starting startup script execution"
 
-  if test -e $INITIALIZED_FLAG
+  if test -e "$INITIALIZED_FLAG"
   then
     # Startup Scripts
     log "Instance already initialized, running update tasks"
@@ -44,7 +49,7 @@ main()
     sudo apt-get install -y dnsutils || { log "Failed to install dnsutils"; exit 1; }
     tell_my_ip_address_to_dns
     setup
-    touch $INITIALIZED_FLAG
+    touch "$INITIALIZED_FLAG"
     log "First-time setup completed"
   fi
   
@@ -113,7 +118,7 @@ setup(){
     
     sudo apt-get update
     sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || { log "Failed to install Docker"; exit 1; }
-    sudo usermod -aG docker $USER
+    sudo usermod -aG docker "$USER"
     log "Docker installation completed"
   else
     log "Warning: Failed to download Docker GPG key"
@@ -127,6 +132,18 @@ setup(){
     log "Poetry installation completed"
   else
     log "Warning: Failed to install Poetry"
+  fi
+
+  # Install dotfiles
+  log "Installing dotfiles"
+  if sudo -u "$USERNAME" sh -c "cd /home/$USERNAME && git clone https://github.com/$USERNAME/dotfiles.git 2>/dev/null || true"; then
+    if sudo -u "$USERNAME" sh -c "cd /home/$USERNAME/dotfiles && make install 2>/dev/null || stow -t /home/$USERNAME . 2>/dev/null || true"; then
+      log "Dotfiles installation completed"
+    else
+      log "Warning: Failed to install dotfiles"
+    fi
+  else
+    log "Warning: Failed to clone dotfiles repository"
   fi
   
   log "Setup completed successfully"
