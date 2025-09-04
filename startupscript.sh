@@ -97,82 +97,26 @@ setup(){
     openssh-server \
     pipx || { log "Failed to install essential packages"; exit 1; }
 
-  # Akamai CLI installation
-  log "Installing Akamai CLI"
-  ARCH=$(dpkg --print-architecture)
-  log "Detected architecture: $ARCH"
+  log "Configuring SSH for GitHub"
 
-  # Check if binary is available for this architecture
-  # Note: Akamai CLI only provides Linux binaries for AMD64, not ARM64
-  if test "$ARCH" = "amd64"; then
-    CLI_ARCH="linuxamd64"
-    log "Using Akamai CLI binary: akamai-v2.0.2-${CLI_ARCH}"
-    
-    # Try binary download for AMD64
-    if curl -fsSL "https://github.com/akamai/cli/releases/download/v2.0.2/akamai-v2.0.2-${CLI_ARCH}" -o /tmp/akamai; then
-      log "Successfully downloaded Akamai CLI binary"
-      sudo chmod +x /tmp/akamai
-      sudo mv /tmp/akamai /usr/local/bin/akamai
-      log "Akamai CLI binary installation completed"
+  # Create .ssh directory
+  sudo -u "$USERNAME" mkdir -p /home/$USERNAME/.ssh
+  sudo -u "$USERNAME" chmod 700 /home/$USERNAME/.ssh
 
-      # Verify installation
-      if /usr/local/bin/akamai --version >/dev/null 2>&1; then
-        AKAMAI_VERSION=$(/usr/local/bin/akamai --version 2>/dev/null || echo "unknown")
-        log "Akamai CLI verified successfully - Version: $AKAMAI_VERSION"
-      else
-        log "Warning: Akamai CLI verification failed"
-      fi
-    else
-      log "Warning: Failed to download Akamai CLI binary for AMD64"
-    fi
+  # Fetch SSH private key from Secret Manager
+  if gcloud secrets versions access latest --secret=id_ed25519 \
+     > /home/$USERNAME/.ssh/id_ed25519 2>/dev/null; then
+    chmod 600 /home/$USERNAME/.ssh/id_ed25519
+    chown $USERNAME:$USERNAME /home/$USERNAME/.ssh/id_ed25519
+    log "SSH key installed from Secret Manager"
+  else
+    log "ERROR: Failed to fetch SSH key from Secret Manager"
   fi
-  
-  # For ARM64 or if AMD64 binary download failed, try source compilation
-  if ! command -v akamai >/dev/null 2>&1; then
-    log "Akamai CLI not found, attempting source compilation"
-    if command -v go >/dev/null 2>&1; then
-      log "Go compiler found, compiling Akamai CLI from source"
-      TEMP_DIR=$(mktemp -d)
-      cd "$TEMP_DIR" || { log "Warning: Failed to create temp directory"; cd /; return; }
 
-      if git clone https://github.com/akamai/cli.git; then
-        log "Successfully cloned Akamai CLI repository"
-        cd cli || { log "Warning: Failed to enter cli directory"; cd / && rm -rf "$TEMP_DIR"; return; }
-
-        log "Building Akamai CLI from source for architecture: $ARCH"
-        # Map architecture for Go build
-        GO_ARCH="$ARCH"
-        if test "$ARCH" = "arm64"; then
-          GO_ARCH="arm64"
-        elif test "$ARCH" = "amd64"; then
-          GO_ARCH="amd64"
-        fi
-        
-        if GOOS=linux GOARCH="$GO_ARCH" CGO_ENABLED=0 \
-           go build -trimpath -ldflags "-s -w" -o akamai ./cli; then
-          log "Successfully built Akamai CLI from source"
-          sudo install -m755 akamai /usr/local/bin/akamai
-          log "Akamai CLI source installation completed"
-
-          if /usr/local/bin/akamai --version >/dev/null 2>&1; then
-            AKAMAI_VERSION=$(/usr/local/bin/akamai --version 2>/dev/null || echo "unknown")
-            log "Akamai CLI verified successfully - Version: $AKAMAI_VERSION"
-          else
-            log "Warning: Akamai CLI verification failed after source build"
-          fi
-        else
-          log "Warning: Failed to build Akamai CLI from source"
-        fi
-      else
-        log "Warning: Failed to clone Akamai CLI repository"
-      fi
-
-      # Clean up temp directory
-      cd / && rm -rf "$TEMP_DIR"
-    else
-      log "Warning: Go compiler not available, Akamai CLI installation skipped"
-    fi
-  fi
+  # Add GitHub to known_hosts (to avoid yes/no prompt)
+  sudo -u "$USERNAME" ssh-keyscan github.com >> /home/$USERNAME/.ssh/known_hosts 2>/dev/null
+  sudo -u "$USERNAME" chmod 644 /home/$USERNAME/.ssh/known_hosts
+  log "GitHub SSH configuration completed"
 
   log "Installing Docker"
   # Add Docker's official GPG key:
@@ -216,7 +160,7 @@ setup(){
 
   # Ensure we're in the correct directory
   if test -d "/home/$USERNAME"; then
-    if sudo -u "$USERNAME" sh -c "cd /home/$USERNAME && pwd && git clone https://github.com/mattocci27/dotfiles.git 2>/dev/null || true"; then
+    if sudo -u "$USERNAME" sh -c "cd /home/$USERNAME && pwd && git clone git@github.com:mattocci27/dotfiles.git 2>/dev/null || true"; then
       if sudo -u "$USERNAME" sh -c "cd /home/$USERNAME/dotfiles && ./install.sh 2>/dev/null || true"; then
         log "Dotfiles installation completed"
       else

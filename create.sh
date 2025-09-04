@@ -84,6 +84,16 @@ fi
 
 echo "Using service account: $SERVICE_ACCOUNT"
 
+# Grant service account access to SSH key in Secret Manager
+echo "Granting service account access to SSH key in Secret Manager..."
+if gcloud secrets add-iam-policy-binding id_ed25519 \
+  --member="serviceAccount:${SERVICE_ACCOUNT}" \
+  --role="roles/secretmanager.secretAccessor" 2>/dev/null; then
+  echo "Secret Manager access granted successfully"
+else
+  echo "[Warning] Failed to grant Secret Manager access (key may already have access)"
+fi
+
 # Create instance
 echo "Creating instance '${INSTANCE_NAME}' with machine type '${MACHINE_TYPE}' (${ARCHITECTURE} architecture)..."
 
