@@ -99,23 +99,40 @@ setup(){
 
   log "Configuring SSH for GitHub"
 
-  # Create .ssh directory
-  sudo -u "$USERNAME" mkdir -p /home/$USERNAME/.ssh
-  sudo -u "$USERNAME" chmod 700 /home/$USERNAME/.ssh
+  SECRET_NAME="id_ed25519"
+  KEY_DIR="/home/$USERNAME/.ssh"
+  KEY_PATH="$KEY_DIR/id_ed25519"
+  PROJECT_NAME="silver-spark-121023"
 
-  # Fetch SSH private key from Secret Manager
-  if gcloud secrets versions access latest --secret=id_ed25519 \
-     > /home/$USERNAME/.ssh/id_ed25519 2>/dev/null; then
-    chmod 600 /home/$USERNAME/.ssh/id_ed25519
-    chown $USERNAME:$USERNAME /home/$USERNAME/.ssh/id_ed25519
-    log "SSH key installed from Secret Manager"
+  mkdir -p "$KEY_DIR"
+  chown "$USERNAME:$USERNAME" "$KEY_DIR"
+  chmod 700 "$KEY_DIR"
+
+  TMP="$(mktemp)"
+  if gcloud secrets versions access latest --secret="$SECRET_NAME" --project "$PROJECT_NAME" > "$TMP" 2> /tmp/secret_err.log; then
+    # sanity check: does this look like an OpenSSH private key?
+    if grep -q "BEGIN OPENSSH PRIVATE KEY" "$TMP"; then
+      install -o "$USERNAME" -g "$USERNAME" -m 600 "$TMP" "$KEY_PATH"
+      log "SSH key installed from Secret Manager into $KEY_PATH"
+    else
+      log "ERROR: Secret payload doesn't look like an OpenSSH private key. Not installing."
+      log "First 2 lines were: $(head -n 2 "$TMP")"
+      rm -f "$TMP"
+      exit 1
+    fi
   else
-    log "ERROR: Failed to fetch SSH key from Secret Manager"
+    rc=$?
+    log "ERROR: Failed to access Secret Manager (rc=$rc). Details:"
+    log "$(cat /tmp/secret_err.log)"
+    rm -f "$TMP"
+    exit $rc
   fi
 
-  # Add GitHub to known_hosts (to avoid yes/no prompt)
-  sudo -u "$USERNAME" ssh-keyscan github.com >> /home/$USERNAME/.ssh/known_hosts 2>/dev/null
-  sudo -u "$USERNAME" chmod 644 /home/$USERNAME/.ssh/known_hosts
+  # Known_hosts to avoid prompts
+  sudo -u "$USERNAME" ssh-keyscan github.com >> "$KEY_DIR/known_hosts" 2>/dev/null
+  chmod 644 "$KEY_DIR/known_hosts"
+  chown "$USERNAME:$USERNAME" "$KEY_DIR/known_hosts"
+  
   log "GitHub SSH configuration completed"
 
   log "Installing Docker"
