@@ -19,9 +19,11 @@ MACHINE_TYPE="$3"
 if test "$ARCHITECTURE" = "arm"; then
   DEFAULT_MACHINE_TYPE="c4a-standard-2"
   IMAGE_FAMILY="ubuntu-2404-lts-arm64"
+  DISK_TYPE="hyperdisk-balanced"
 elif test "$ARCHITECTURE" = "amd"; then
   DEFAULT_MACHINE_TYPE="e2-standard-2"
   IMAGE_FAMILY="ubuntu-2404-lts-amd64"
+  DISK_TYPE="pd-balanced"
 else
   echo "[Error] Invalid architecture '$ARCHITECTURE'. Use 'arm' or 'amd'." 1>&2
   exit 1
@@ -96,7 +98,7 @@ if ! gcloud compute --project "${PROJECT_NAME}" \
   --image-project ubuntu-os-cloud \
   --image-family "${IMAGE_FAMILY}" \
   --boot-disk-size "${BOOT_DISK_SIZE}" \
-  --boot-disk-type "pd-balanced" \
+  --boot-disk-type "${DISK_TYPE}" \
   --boot-disk-device-name "${INSTANCE_NAME}" \
   --metadata "dnsZoneName=${DNS_ZONE_NAME},startup-script-url=${STARTUP_SCRIPT_URL}" \
   --tags "http-server"; then
