@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Exit on error and enable logging
+set -e
+
 USERNAME="mattocci"
 DNS_ZONE_NAME="mattocci-dev"
 ZONE="mattocci.dev"
@@ -7,154 +10,207 @@ ZONE="mattocci.dev"
 #ZONE=$(gcloud dns record-sets list --zone ${DNS_ZONE_NAME} --limit 1 --format "value(name)")
 
 INITIALIZED_FLAG=".startup_script_initialized"
+LOG_FILE="/var/log/startup-script.log"
+
+# Logging function
+log() {
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
+}
+
+# Error handling function
+handle_error() {
+  local exit_code=$?
+  log "ERROR: Command failed with exit code $exit_code at line $1"
+  exit $exit_code
+}
+
+# Set up error trap
+trap 'handle_error $LINENO' ERR
 
 main()
 {
+  log "Starting startup script execution"
 
   if test -e $INITIALIZED_FLAG
   then
     # Startup Scripts
+    log "Instance already initialized, running update tasks"
     tell_my_ip_address_to_dns
     update
   else
     # Only first time
-    sudo apt update
-    sudo apt install -y dnsutils
+    log "First-time setup starting"
+    sudo apt-get update || { log "Failed to update package lists"; exit 1; }
+    sudo apt-get install -y dnsutils || { log "Failed to install dnsutils"; exit 1; }
     tell_my_ip_address_to_dns
     setup
     touch $INITIALIZED_FLAG
+    log "First-time setup completed"
   fi
+  
+  log "Startup script execution completed successfully"
 }
 
 # Installation and settings
 setup(){
-  # Foundamental tools
-  sudo apt update
-  sudo apt upgrade -y
-  sudo apt install -y build-essential \
-    git \
-    wget \
+  log "Starting package installation and system setup"
+  
+  # Fundamental tools
+  log "Updating package lists and upgrading system"
+  sudo apt-get update || { log "Failed to update package lists"; exit 1; }
+  sudo apt-get upgrade -y || { log "Failed to upgrade system packages"; exit 1; }
+  log "Installing essential development tools"
+  sudo apt-get install -y xsel \
+    ca-certificates \
+    build-essential \
+    neovim \
     peco \
     fzf \
-    xsel \
-    openvpn \
     zsh \
     tmux \
-    mosh \
     tree \
-    ranger \
-    neovim \
+    make \
     curl \
+    wget \
     cargo \
-    stow \
+    neofetch \
+    ripgrep \
+    libopenblas-dev \
+    snapd \
     nodejs \
-    npm  \
-    software-properties-common
-
-  # # nodejs
-  # npm update
-  # npm install nodemailer
-  # npm install request
+    stow \
+    bat \
+    eza \
+    apptainer \
+    openssh-server \
+    pipx || { log "Failed to install essential packages"; exit 1; }
 
   # Akamai CLI for key management
-  curl -SsL https://akamai.github.io/akr-pkg/debian/KEY.gpg | sudo apt-key add -
-  sudo curl -SsL -o /etc/apt/sources.list.d/akr.list https://akamai.github.io/akr-pkg/debian/akr.list
-  sudo apt update
-  sudo apt install -y akr
+  log "Installing Akamai CLI"
+  sudo mkdir -p /etc/apt/keyrings
+  if curl -fsSL https://akamai.github.io/akr-pkg/debian/KEY.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/akamai-akr.gpg; then
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/akamai-akr.gpg] https://akamai.github.io/akr-pkg/debian stable main" | sudo tee /etc/apt/sources.list.d/akr.list > /dev/null
+    sudo apt-get update
+    sudo apt-get install -y akr || log "Warning: Failed to install Akamai CLI"
+  else
+    log "Warning: Failed to add Akamai CLI repository"
+  fi
 
-  # R
-  sudo apt install -y dirmngr \
-    software-properties-common
+  log "Installing Docker"
+  # Add Docker's official GPG key:
+  sudo apt-get update
+  sudo apt-get install -y ca-certificates curl || { log "Failed to install Docker prerequisites"; exit 1; }
+  sudo install -m 0755 -d /etc/apt/keyrings
+  
+  if sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc; then
+    sudo chmod a+r /etc/apt/keyrings/docker.asc
+    
+    # Add the repository to Apt sources:
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+      $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+      sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    
+    sudo apt-get update
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || { log "Failed to install Docker"; exit 1; }
+    sudo usermod -aG docker $USER
+    log "Docker installation completed"
+  else
+    log "Warning: Failed to download Docker GPG key"
+  fi
 
-  wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | sudo tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
-
-  sudo add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
-
-  sudo apt update
-  sudo apt install -y r-base
-
-  echo "Installing python..."
-  sudo apt install -y \
-    libpython3-dev \
-    python3-dev \
-    python3-pip \
-    python3-venv \
-    python3-virtualenv \
-    docker-compose
-
-
-  echo "Installing docker..."
-  # docker 
-  sudo apt install -y docker.io
-
-  sudo usermod -aG docker $USER
-
-  # dotfiles
-  sudo -u ${USERNAME} bash -c \
-    'git clone https://github.com/mattocci27/dotfiles.git \
-    $HOME/dotfiles; \
-    cd $HOME/dotfiles; \
-    bash scripts/.dotscripts/deploy.sh; \
-    cd'
- 
-  # rust 
-  cargo install exa ytop bat fd ripgrep gitui
-
-  # poetry
-  curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
-
-  # # swap
-  # fallocate -l 4G /swapfile
-  # chmod 600 /swapfile
-  # mkswap /swapfile
-  # swapon /swapfile
-  # echo "/swapfile swap swap defaults 0 0" >> /etc/fstab
+  log "Installing Poetry"
+  # Install poetry using the official installer
+  if curl -sSL https://install.python-poetry.org | python3 -; then
+    # Add poetry to PATH for all users
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> /etc/environment
+    log "Poetry installation completed"
+  else
+    log "Warning: Failed to install Poetry"
+  fi
+  
+  log "Setup completed successfully"
 }
 
 # Update on each startup except the first time
 update()
 {
-  sudo apt update
-  sudo apt upgrade
-  kr upgrade
+  log "Running system updates"
+  sudo apt-get update || log "Warning: apt update failed"
+  sudo apt-get upgrade -y || log "Warning: apt upgrade failed"
+  
+  # Only run kr upgrade if kr is installed
+  if command -v kr > /dev/null 2>&1; then
+    kr upgrade || log "Warning: kr upgrade failed"
+  else
+    log "Warning: kr command not found, skipping kr upgrade"
+  fi
+  
+  log "System updates completed"
 }
 
 tell_my_ip_address_to_dns()
 {
+  log "Updating DNS records"
+  
   # Get the hostname of the instance
   HOSTNAME=$(hostname)
+  log "Instance hostname: $HOSTNAME"
 
   # Get the ip address which is used last time
-  LAST_PUBLIC_ADDRESS=$(host "${HOSTNAME}.e.${ZONE}" | sed -rn 's@^.* has address @@p')
-  LAST_PRIVATE_ADDRESS=$(host "${HOSTNAME}.i.${ZONE}" | sed -rn 's@^.* has address @@p')
+  LAST_PUBLIC_ADDRESS=$(host "${HOSTNAME}.e.${ZONE}" 2>/dev/null | sed -rn 's@^.* has address @@p' || true)
+  LAST_PRIVATE_ADDRESS=$(host "${HOSTNAME}.i.${ZONE}" 2>/dev/null | sed -rn 's@^.* has address @@p' || true)
 
   # Get the current public ip address via Metadata API
   METADATA_SERVER="http://metadata.google.internal/computeMetadata/v1"
   QUERY="instance/network-interfaces/0/access-configs/0/external-ip"
-  PUBLIC_ADDRESS=$(curl "${METADATA_SERVER}/${QUERY}" -H "Metadata-Flavor: Google")
-  
-  # Get the current local ip address
-  PRIVATE_ADDRESS=$(hostname -i)
+  PUBLIC_ADDRESS=$(curl -s "${METADATA_SERVER}/${QUERY}" -H "Metadata-Flavor: Google" || { log "Warning: Failed to get public IP"; echo ""; })
 
-  # Update Cloud DNS
-  TEMP=$(mktemp -u)
-  gcloud dns record-sets transaction start -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}"
-  if test "$LAST_PUBLIC_ADDRESS" != ""
-  then
-    gcloud dns record-sets transaction remove -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" \
-      --name "${HOSTNAME}.e.${ZONE}" --ttl 300 --type A "$LAST_PUBLIC_ADDRESS"
-  fi
-  gcloud dns record-sets transaction add -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" \
-    --name "${HOSTNAME}.e.${ZONE}" --ttl 300 --type A "$PUBLIC_ADDRESS"
+  # Get the current local ip address
+  PRIVATE_ADDRESS=$(hostname -i 2>/dev/null || { log "Warning: Failed to get private IP"; echo ""; })
   
-  if test "$LAST_PRIVATE_ADDRESS" != ""
-  then
-    gcloud dns record-sets transaction remove -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" \
-      --name "${HOSTNAME}.i.${ZONE}" --ttl 300 --type A "$LAST_PRIVATE_ADDRESS"
+  log "Current public IP: $PUBLIC_ADDRESS"
+  log "Current private IP: $PRIVATE_ADDRESS"
+
+  # Update Cloud DNS only if we have valid IP addresses
+  if test -n "$PUBLIC_ADDRESS" && test -n "$PRIVATE_ADDRESS"; then
+    TEMP=$(mktemp)
+    trap 'rm -f "$TEMP"' EXIT
+    
+    if gcloud dns record-sets transaction start -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" 2>/dev/null; then
+      # Remove old public address record if it exists
+      if test -n "$LAST_PUBLIC_ADDRESS" && test "$LAST_PUBLIC_ADDRESS" != "$PUBLIC_ADDRESS"; then
+        gcloud dns record-sets transaction remove -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" \
+          --name "${HOSTNAME}.e.${ZONE}" --ttl 300 --type A "$LAST_PUBLIC_ADDRESS" 2>/dev/null || true
+      fi
+      
+      # Add new public address record
+      gcloud dns record-sets transaction add -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" \
+        --name "${HOSTNAME}.e.${ZONE}" --ttl 300 --type A "$PUBLIC_ADDRESS" 2>/dev/null || true
+
+      # Remove old private address record if it exists
+      if test -n "$LAST_PRIVATE_ADDRESS" && test "$LAST_PRIVATE_ADDRESS" != "$PRIVATE_ADDRESS"; then
+        gcloud dns record-sets transaction remove -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" \
+          --name "${HOSTNAME}.i.${ZONE}" --ttl 300 --type A "$LAST_PRIVATE_ADDRESS" 2>/dev/null || true
+      fi
+      
+      # Add new private address record
+      gcloud dns record-sets transaction add -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" \
+        --name "${HOSTNAME}.i.${ZONE}" --ttl 300 --type A "$PRIVATE_ADDRESS" 2>/dev/null || true
+        
+      # Execute the transaction
+      if gcloud dns record-sets transaction execute -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" 2>/dev/null; then
+        log "DNS records updated successfully"
+      else
+        log "Warning: Failed to execute DNS transaction"
+        gcloud dns record-sets transaction abort -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" 2>/dev/null || true
+      fi
+    else
+      log "Warning: Failed to start DNS transaction"
+    fi
+  else
+    log "Warning: Could not determine IP addresses, skipping DNS update"
   fi
-  gcloud dns record-sets transaction add -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" \
-    --name "${HOSTNAME}.i.${ZONE}" --ttl 300 --type A "$PRIVATE_ADDRESS"
-  gcloud dns record-sets transaction execute -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}"
 }
 
 main
