@@ -35,6 +35,9 @@ trap 'handle_error $LINENO' ERR
 main()
 {
   log "Starting startup script execution"
+  log "Initial working directory: $(pwd)"
+  log "Script running as user: $(whoami)"
+  log "Root filesystem check: $(ls -la / | head -3)"
 
   if test -e "$INITIALIZED_FLAG"
   then
@@ -59,6 +62,10 @@ main()
 # Installation and settings
 setup(){
   log "Starting package installation and system setup"
+  
+  # Ensure we're in root directory to avoid any path confusion
+  cd / || { log "Warning: Failed to change to root directory"; }
+  log "Setup working directory: $(pwd)"
 
   # Fundamental tools
   log "Updating package lists and upgrading system"
@@ -193,14 +200,24 @@ setup(){
 
   # Install dotfiles
   log "Installing dotfiles"
-  if sudo -u "$USERNAME" sh -c "cd /home/$USERNAME && git clone https://github.com/$USERNAME/dotfiles.git 2>/dev/null || true"; then
-    if sudo -u "$USERNAME" sh -c "cd /home/$USERNAME/dotfiles && make install 2>/dev/null || stow -t /home/$USERNAME . 2>/dev/null || true"; then
-      log "Dotfiles installation completed"
+  log "Current working directory: $(pwd)"
+  log "USERNAME: $USERNAME"
+  log "Home directory exists: $(test -d /home/$USERNAME && echo 'yes' || echo 'no')"
+  log "Home directory contents: $(ls -la /home/$USERNAME 2>/dev/null | head -5 || echo 'failed to list')"
+  
+  # Ensure we're in the correct directory
+  if test -d "/home/$USERNAME"; then
+    if sudo -u "$USERNAME" sh -c "cd /home/$USERNAME && pwd && git clone https://github.com/$USERNAME/dotfiles.git 2>/dev/null || true"; then
+      if sudo -u "$USERNAME" sh -c "cd /home/$USERNAME/dotfiles && make install 2>/dev/null || stow -t /home/$USERNAME . 2>/dev/null || true"; then
+        log "Dotfiles installation completed"
+      else
+        log "Warning: Failed to install dotfiles"
+      fi
     else
-      log "Warning: Failed to install dotfiles"
+      log "Warning: Failed to clone dotfiles repository"
     fi
   else
-    log "Warning: Failed to clone dotfiles repository"
+    log "Warning: User home directory /home/$USERNAME does not exist"
   fi
 
   log "Setup completed successfully"
