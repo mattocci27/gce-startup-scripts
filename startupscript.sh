@@ -92,8 +92,8 @@ setup(){
 
   # Akamai CLI installation
   log "Installing Akamai CLI"
-  AKAMAI_CLI_VERSION="latest"
   ARCH=$(dpkg --print-architecture)
+  log "Detected architecture: $ARCH"
 
   # Map architecture names to match GitHub releases
   case "$ARCH" in
@@ -102,37 +102,60 @@ setup(){
     *) CLI_ARCH="linuxamd64" ;; # fallback to amd64
   esac
 
-  # akamai
-  git clone https://github.com/akamai/cli.git
-    # from the repo root
-  mkdir -p dist
-  # ARM64 (aarch64) Linux
-  GOOS=linux GOARCH=arm64 CGO_ENABLED=0 \
-    go build -trimpath -ldflags "-s -w" -o dist/akamai ./cli
-  # (Optional) 32-bit ARM v7
-  # GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 \
-  #   go build -trimpath -ldflags "-s -w" -o dist/akamai ./cli
-  # Check the binary
-  ls -lh dist/akamai
-  file dist/akamai    # should say: ELF 64-bit, ARM aarch64 (for arm64)
-  # Install
-  sudo install -m755 dist/akamai /usr/local/bin/akamai
-  # Test
-  akamai --version
+  log "Using Akamai CLI binary: akamai-${CLI_ARCH}"
 
+  # Try binary download first (recommended method)
   if curl -fsSL "https://github.com/akamai/cli/releases/latest/download/akamai-${CLI_ARCH}" -o /tmp/akamai; then
+    log "Successfully downloaded Akamai CLI binary"
     sudo chmod +x /tmp/akamai
     sudo mv /tmp/akamai /usr/local/bin/akamai
-    log "Akamai CLI installation completed"
+    log "Akamai CLI binary installation completed"
 
     # Verify installation
     if /usr/local/bin/akamai --version >/dev/null 2>&1; then
-      log "Akamai CLI verified successfully"
+      AKAMAI_VERSION=$(/usr/local/bin/akamai --version 2>/dev/null || echo "unknown")
+      log "Akamai CLI verified successfully - Version: $AKAMAI_VERSION"
     else
       log "Warning: Akamai CLI verification failed"
     fi
   else
-    log "Warning: Failed to download Akamai CLI"
+    log "Warning: Failed to download Akamai CLI binary, trying source compilation"
+
+    # Fallback to source compilation if golang-go is available
+    if command -v go >/dev/null 2>&1; then
+      log "Go compiler found, attempting source compilation"
+      TEMP_DIR=$(mktemp -d)
+      cd "$TEMP_DIR" || { log "Warning: Failed to create temp directory"; return; }
+
+      if git clone https://github.com/akamai/cli.git; then
+        log "Successfully cloned Akamai CLI repository"
+        cd cli || { log "Warning: Failed to enter cli directory"; return; }
+
+        log "Building Akamai CLI from source for architecture: $ARCH"
+        if GOOS=linux GOARCH=$(echo "$ARCH" | sed 's/amd64/amd64/; s/arm64/arm64/') CGO_ENABLED=0 \
+           go build -trimpath -ldflags "-s -w" -o akamai ./cli; then
+          log "Successfully built Akamai CLI from source"
+          sudo install -m755 akamai /usr/local/bin/akamai
+          log "Akamai CLI source installation completed"
+
+          if /usr/local/bin/akamai --version >/dev/null 2>&1; then
+            AKAMAI_VERSION=$(/usr/local/bin/akamai --version 2>/dev/null || echo "unknown")
+            log "Akamai CLI verified successfully - Version: $AKAMAI_VERSION"
+          else
+            log "Warning: Akamai CLI verification failed after source build"
+          fi
+        else
+          log "Warning: Failed to build Akamai CLI from source"
+        fi
+      else
+        log "Warning: Failed to clone Akamai CLI repository"
+      fi
+
+      # Clean up temp directory
+      cd / && rm -rf "$TEMP_DIR"
+    else
+      log "Warning: Go compiler not available, Akamai CLI installation failed"
+    fi
   fi
 
   log "Installing Docker"
