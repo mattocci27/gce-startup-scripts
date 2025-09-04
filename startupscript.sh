@@ -184,15 +184,36 @@ setup(){
     fi
 
     log "pyenv installation completed"
+    
+    # Install Python 3.12.5 via pyenv
+    log "Installing Python 3.12.5 via pyenv"
+    if sudo -u "$USERNAME" bash -c 'export PYENV_ROOT="$HOME/.pyenv" && export PATH="$PYENV_ROOT/bin:$PATH" && eval "$(pyenv init -)" && pyenv install 3.12.5'; then
+      log "Python 3.12.5 installed successfully"
+      
+      # Set Python 3.12.5 as the global default
+      if sudo -u "$USERNAME" bash -c 'export PYENV_ROOT="$HOME/.pyenv" && export PATH="$PYENV_ROOT/bin:$PATH" && eval "$(pyenv init -)" && pyenv global 3.12.5'; then
+        log "Python 3.12.5 set as global default"
+      else
+        log "Warning: Failed to set Python 3.12.5 as global default"
+      fi
+    else
+      log "Warning: Failed to install Python 3.12.5 via pyenv"
+    fi
   else
     log "Warning: Failed to install pyenv"
   fi
 
   log "Installing Poetry"
-  # Install poetry using the official installer
-  if curl -sSL https://install.python-poetry.org | python3 -; then
-    # Add poetry to PATH for all users
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >> /etc/environment
+  # Install poetry using the official installer with pyenv Python
+  if sudo -u "$USERNAME" bash -c 'export PYENV_ROOT="$HOME/.pyenv" && export PATH="$PYENV_ROOT/bin:$PATH" && eval "$(pyenv init -)" && curl -sSL https://install.python-poetry.org | python'; then
+    # Add poetry to PATH for the user
+    sudo -u "$USERNAME" bash -c 'echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >> /home/$USERNAME/.bashrc'
+    
+    # Also add to .zshrc if zsh is installed
+    if command -v zsh >/dev/null 2>&1; then
+      sudo -u "$USERNAME" bash -c 'echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >> /home/$USERNAME/.zshrc'
+    fi
+    
     log "Poetry installation completed"
   else
     log "Warning: Failed to install Poetry"
