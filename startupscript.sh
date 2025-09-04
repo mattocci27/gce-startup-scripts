@@ -107,7 +107,7 @@ setup(){
   mkdir -p "$KEY_DIR"
   chown "$USERNAME:$USERNAME" "$KEY_DIR"
   chmod 700 "$KEY_DIR"
-  
+
   TMP="$(mktemp)"
   if gcloud secrets versions access latest --project "$PROJECT_NAME" --secret="$SECRET_NAME" > "$TMP"; then
     if grep -q "BEGIN OPENSSH PRIVATE KEY" "$TMP"; then
@@ -124,11 +124,11 @@ setup(){
     rm -f "$TMP"
     exit $rc
   fi
-  
+
   sudo -u "$USERNAME" ssh-keyscan github.com >> "$KEY_DIR/known_hosts" 2>/dev/null
   chmod 644 "$KEY_DIR/known_hosts"
   chown "$USERNAME:$USERNAME" "$KEY_DIR/known_hosts"
-  
+
   log "GitHub SSH configuration completed"
 
   log "Installing Docker"
@@ -152,6 +152,40 @@ setup(){
     log "Docker installation completed"
   else
     log "Warning: Failed to download Docker GPG key"
+  fi
+
+  log "Installing pyenv"
+  # Install pyenv dependencies
+  sudo apt-get install -y make build-essential libssl-dev zlib1g-dev \
+    libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
+    libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev \
+    libffi-dev liblzma-dev || log "Warning: Some pyenv dependencies failed to install"
+
+  # Install pyenv for the user
+  if sudo -u "$USERNAME" bash -c 'curl https://pyenv.run | bash'; then
+    # Add pyenv to user's shell configuration
+    sudo -u "$USERNAME" bash -c 'cat >> /home/$USERNAME/.bashrc << "EOF"
+
+    # pyenv configuration
+    export PYENV_ROOT="$HOME/.pyenv"
+    command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+    eval "$(pyenv init -)"
+    EOF'
+
+    # Also add to .zshrc if zsh is installed
+    if command -v zsh >/dev/null 2>&1; then
+      sudo -u "$USERNAME" bash -c 'cat >> /home/$USERNAME/.zshrc << "EOF"
+
+      # pyenv configuration
+      export PYENV_ROOT="$HOME/.pyenv"
+      command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+      eval "$(pyenv init -)"
+      EOF'
+    fi
+
+    log "pyenv installation completed"
+  else
+    log "Warning: Failed to install pyenv"
   fi
 
   log "Installing Poetry"
