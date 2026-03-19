@@ -17,7 +17,7 @@ log() {
   local msg="[$(date '+%Y-%m-%d %H:%M:%S')] $*"
   echo "$msg"
   # Try to write to log file, fallback to syslog if permission denied
-  if ! echo "$msg" >> "$LOG_FILE" 2>/dev/null; then
+  if ! echo "$msg" >>"$LOG_FILE" 2>/dev/null; then
     logger -t startup-script "$*"
   fi
 }
@@ -32,15 +32,13 @@ handle_error() {
 # Set up error trap
 trap 'handle_error $LINENO' ERR
 
-main()
-{
+main() {
   log "Starting startup script execution"
   log "Initial working directory: $(pwd)"
   log "Script running as user: $(whoami)"
   log "Root filesystem check: $(ls -la / | head -3)"
 
-  if test -e "$INITIALIZED_FLAG"
-  then
+  if test -e "$INITIALIZED_FLAG"; then
     # Startup Scripts
     log "Instance already initialized, running update tasks"
     tell_my_ip_address_to_dns
@@ -48,8 +46,14 @@ main()
   else
     # Only first time
     log "First-time setup starting"
-    sudo apt-get update || { log "Failed to update package lists"; exit 1; }
-    sudo apt-get install -y dnsutils || { log "Failed to install dnsutils"; exit 1; }
+    sudo apt-get update || {
+      log "Failed to update package lists"
+      exit 1
+    }
+    sudo apt-get install -y dnsutils || {
+      log "Failed to install dnsutils"
+      exit 1
+    }
     tell_my_ip_address_to_dns
     setup
     touch "$INITIALIZED_FLAG"
@@ -60,7 +64,7 @@ main()
 }
 
 # Installation and settings
-setup(){
+setup() {
   log "Starting package installation and system setup"
 
   # Ensure we're in root directory to avoid any path confusion
@@ -69,8 +73,14 @@ setup(){
 
   # Fundamental tools
   log "Updating package lists and upgrading system"
-  sudo apt-get update || { log "Failed to update package lists"; exit 1; }
-  sudo apt-get upgrade -y || { log "Failed to upgrade system packages"; exit 1; }
+  sudo apt-get update || {
+    log "Failed to update package lists"
+    exit 1
+  }
+  sudo apt-get upgrade -y || {
+    log "Failed to upgrade system packages"
+    exit 1
+  }
   log "Installing essential development tools"
   sudo apt-get install -y xsel \
     ca-certificates \
@@ -94,19 +104,28 @@ setup(){
     bat \
     eza \
     openssh-server \
-    pipx || { log "Failed to install essential packages"; exit 1; }
+    pipx || {
+    log "Failed to install essential packages"
+    exit 1
+  }
 
   log "Installing latest Neovim"
-  NVIM_URL=$(curl -fsSL https://api.github.com/repos/neovim/neovim/releases/latest \
-    | grep '"browser_download_url"' \
-    | grep 'nvim-linux-x86_64\.tar\.gz"' \
-    | head -1 \
-    | sed 's/.*"browser_download_url": "\(.*\)"/\1/')
+
+  NVIM_URL=$(curl -fsSL https://api.github.com/repos/neovim/neovim/releases/latest |
+    grep '"browser_download_url"' |
+    grep 'nvim-linux-x86_64\.tar\.gz"' |
+    head -1 |
+    sed 's/.*"browser_download_url": "\(.*\)"/\1/')
+
   if [ -n "$NVIM_URL" ]; then
     TMP_NVIM=$(mktemp -d)
     curl -fsSL "$NVIM_URL" -o "$TMP_NVIM/nvim.tar.gz"
     tar -xzf "$TMP_NVIM/nvim.tar.gz" -C "$TMP_NVIM"
-    sudo install -m 0755 "$TMP_NVIM"/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim
+
+    sudo rm -rf /opt/nvim-linux-x86_64
+    sudo mv "$TMP_NVIM/nvim-linux-x86_64" /opt/nvim-linux-x86_64
+    sudo ln -sf /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim
+
     rm -rf "$TMP_NVIM"
     log "Neovim installed: $(nvim --version | head -1)"
   else
@@ -126,7 +145,7 @@ setup(){
   chmod 700 "$KEY_DIR"
 
   TMP="$(mktemp)"
-  if gcloud secrets versions access latest --project "$PROJECT_NAME" --secret="$SECRET_NAME" > "$TMP"; then
+  if gcloud secrets versions access latest --project "$PROJECT_NAME" --secret="$SECRET_NAME" >"$TMP"; then
     if grep -q "BEGIN OPENSSH PRIVATE KEY" "$TMP"; then
       install -o "$USERNAME" -g "$USERNAME" -m 600 "$TMP" "$KEY_PATH"
       log "SSH key installed at $KEY_PATH"
@@ -142,7 +161,7 @@ setup(){
     exit $rc
   fi
 
-  sudo -u "$USERNAME" ssh-keyscan github.com >> "$KEY_DIR/known_hosts" 2>/dev/null
+  sudo -u "$USERNAME" ssh-keyscan github.com >>"$KEY_DIR/known_hosts" 2>/dev/null
   chmod 644 "$KEY_DIR/known_hosts"
   chown "$USERNAME:$USERNAME" "$KEY_DIR/known_hosts"
 
@@ -151,7 +170,10 @@ setup(){
   log "Installing Docker"
   # Add Docker's official GPG key:
   sudo apt-get update
-  sudo apt-get install -y ca-certificates curl || { log "Failed to install Docker prerequisites"; exit 1; }
+  sudo apt-get install -y ca-certificates curl || {
+    log "Failed to install Docker prerequisites"
+    exit 1
+  }
   sudo install -m 0755 -d /etc/apt/keyrings
 
   if sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc; then
@@ -160,11 +182,14 @@ setup(){
     # Add the repository to Apt sources:
     echo \
       "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-      $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
-      sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+      $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" |
+      sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
 
     sudo apt-get update
-    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || { log "Failed to install Docker"; exit 1; }
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || {
+      log "Failed to install Docker"
+      exit 1
+    }
     sudo usermod -aG docker "$USER"
     log "Docker installation completed"
   else
@@ -201,12 +226,12 @@ setup(){
     fi
 
     log "pyenv installation completed"
-    
+
     # Install Python 3.12.5 via pyenv
     log "Installing Python 3.12.5 via pyenv"
     if sudo -u "$USERNAME" bash -c 'export PYENV_ROOT="$HOME/.pyenv" && export PATH="$PYENV_ROOT/bin:$PATH" && eval "$(pyenv init -)" && pyenv install 3.12.5'; then
       log "Python 3.12.5 installed successfully"
-      
+
       # Set Python 3.12.5 as the global default
       if sudo -u "$USERNAME" bash -c 'export PYENV_ROOT="$HOME/.pyenv" && export PATH="$PYENV_ROOT/bin:$PATH" && eval "$(pyenv init -)" && pyenv global 3.12.5'; then
         log "Python 3.12.5 set as global default"
@@ -225,12 +250,12 @@ setup(){
   if sudo -u "$USERNAME" bash -c 'export PYENV_ROOT="$HOME/.pyenv" && export PATH="$PYENV_ROOT/bin:$PATH" && eval "$(pyenv init -)" && curl -sSL https://install.python-poetry.org | python'; then
     # Add poetry to PATH for the user
     sudo -u "$USERNAME" bash -c 'echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >> /home/$USERNAME/.bashrc'
-    
+
     # Also add to .zshrc if zsh is installed
     if command -v zsh >/dev/null 2>&1; then
       sudo -u "$USERNAME" bash -c 'echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >> /home/$USERNAME/.zshrc'
     fi
-    
+
     log "Poetry installation completed"
   else
     log "Warning: Failed to install Poetry"
@@ -262,14 +287,13 @@ setup(){
 }
 
 # Update on each startup except the first time
-update()
-{
+update() {
   log "Running system updates"
   sudo apt-get update || log "Warning: apt update failed"
   sudo apt-get upgrade -y || log "Warning: apt upgrade failed"
 
   # Only run kr upgrade if kr is installed
-  if command -v kr > /dev/null 2>&1; then
+  if command -v kr >/dev/null 2>&1; then
     kr upgrade || log "Warning: kr upgrade failed"
   else
     log "Warning: kr command not found, skipping kr upgrade"
@@ -278,8 +302,7 @@ update()
   log "System updates completed"
 }
 
-tell_my_ip_address_to_dns()
-{
+tell_my_ip_address_to_dns() {
   log "Updating DNS records"
 
   # Get the hostname of the instance
@@ -293,10 +316,16 @@ tell_my_ip_address_to_dns()
   # Get the current public ip address via Metadata API
   METADATA_SERVER="http://metadata.google.internal/computeMetadata/v1"
   QUERY="instance/network-interfaces/0/access-configs/0/external-ip"
-  PUBLIC_ADDRESS=$(curl -s "${METADATA_SERVER}/${QUERY}" -H "Metadata-Flavor: Google" || { log "Warning: Failed to get public IP"; echo ""; })
+  PUBLIC_ADDRESS=$(curl -s "${METADATA_SERVER}/${QUERY}" -H "Metadata-Flavor: Google" || {
+    log "Warning: Failed to get public IP"
+    echo ""
+  })
 
   # Get the current local ip address
-  PRIVATE_ADDRESS=$(hostname -i 2>/dev/null || { log "Warning: Failed to get private IP"; echo ""; })
+  PRIVATE_ADDRESS=$(hostname -i 2>/dev/null || {
+    log "Warning: Failed to get private IP"
+    echo ""
+  })
 
   log "Current public IP: $PUBLIC_ADDRESS"
   log "Current private IP: $PRIVATE_ADDRESS"
