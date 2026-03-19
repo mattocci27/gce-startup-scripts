@@ -8,7 +8,7 @@ PROJECT_NAME="silver-spark-121023"
 DNS_ZONE_NAME="mattocci-dev"
 ZONE="asia-east1-a"
 STARTUP_SCRIPT_URL="https://raw.githubusercontent.com/mattocci27/gce-startup-scripts/master/startupscript.sh"
-BOOT_DISK_SIZE="60"
+BOOT_DISK_SIZE="40"
 
 # Arguments
 INSTANCE_NAME="$1"
@@ -33,8 +33,7 @@ fi
 MACHINE_TYPE="${MACHINE_TYPE:-$DEFAULT_MACHINE_TYPE}"
 
 # Validation
-if test "$INSTANCE_NAME" = ""
-then
+if test "$INSTANCE_NAME" = ""; then
   echo "[Error] Instance name required." 1>&2
   echo "Usage: $0 <instance-name> [architecture] [machine-type]" 1>&2
   echo "  architecture: 'arm' or 'amd' (default: amd)" 1>&2
@@ -43,7 +42,7 @@ fi
 
 # Check required tools
 for tool in gcloud curl; do
-  if ! command -v "$tool" > /dev/null 2>&1; then
+  if ! command -v "$tool" >/dev/null 2>&1; then
     echo "[Error] Required tool '$tool' not found." 1>&2
     exit 1
   fi
@@ -59,7 +58,7 @@ TEMP=$(mktemp)
 trap 'rm -f "$TEMP"' EXIT
 
 echo "Downloading startup script..."
-if ! curl -fsSL "${STARTUP_SCRIPT_URL}" > "${TEMP}"; then
+if ! curl -fsSL "${STARTUP_SCRIPT_URL}" >"${TEMP}"; then
   echo "[Error] Failed to download startup script from ${STARTUP_SCRIPT_URL}" 1>&2
   exit 1
 fi

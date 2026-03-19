@@ -76,7 +76,6 @@ setup(){
     ca-certificates \
     build-essential \
     golang-go \
-    neovim \
     peco \
     fzf \
     zsh \
@@ -96,6 +95,24 @@ setup(){
     eza \
     openssh-server \
     pipx || { log "Failed to install essential packages"; exit 1; }
+
+  log "Installing latest Neovim"
+  NVIM_URL=$(curl -fsSL https://api.github.com/repos/neovim/neovim/releases/latest \
+    | grep '"browser_download_url"' \
+    | grep 'nvim-linux-x86_64\.tar\.gz"' \
+    | head -1 \
+    | sed 's/.*"browser_download_url": "\(.*\)"/\1/')
+  if [ -n "$NVIM_URL" ]; then
+    TMP_NVIM=$(mktemp -d)
+    curl -fsSL "$NVIM_URL" -o "$TMP_NVIM/nvim.tar.gz"
+    tar -xzf "$TMP_NVIM/nvim.tar.gz" -C "$TMP_NVIM"
+    sudo install -m 0755 "$TMP_NVIM"/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim
+    rm -rf "$TMP_NVIM"
+    log "Neovim installed: $(nvim --version | head -1)"
+  else
+    log "Warning: Could not determine latest Neovim URL, falling back to apt"
+    sudo apt-get install -y neovim || log "Warning: Failed to install neovim via apt"
+  fi
 
   log "Configuring SSH for GitHub"
 
